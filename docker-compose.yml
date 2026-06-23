@@ -1,0 +1,110 @@
+version: '3.8'
+
+# ─── Usage ────────────────────────────────────────────────────────────────────
+#
+#   cp .env.example .env          # fill in ANTHROPIC_API_KEY and JWT/OAuth2 secrets
+#   docker compose up -d          # start all three services
+#   docker compose logs -f api    # stream API logs
+#   docker compose down -v        # stop and remove volumes
+#
+# The API will be available at http://localhost:8000
+# Neo4j Browser at             http://localhost:7474
+#
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Neo4j knowledge graph ──────────────────────────────────────────────────
+  neo4j:
+    image: neo4j:5.14.0
+    container_name: supply-chain-neo4j
+    ports:
+      - "7474:7474"   # Neo4j Browser (HTTP)
+      - "7687:7687"   # Bolt protocol
+    environment:
+      - NEO4J_AUTH=neo4j/supplychainkg
+      - NEO4J_PLUGINS=["apoc", "graph-data-science"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,gds.*
+      - NEO4J_dbms_memory_heap_initial__size=512m
+      - NEO4J_dbms_memory_heap_max__size=2G
+      - NEO4J_dbms_memory_pagecache_size=512m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+      - neo4j_import:/var/lib/neo4j/import
+      - neo4j_plugins:/plugins
+    networks:
+      - supply-chain-network
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p supplychainkg 'RETURN 1'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ── Redis (shared rate limit state across API workers) ─────────────────────
+  redis:
+    image: redis:7.2-alpine
+    container_name: supply-chain-redis
+    networks:
+      - supply-chain-network
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  # ── FastAPI application ────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: supply-chain-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env                          # ANTHROPIC_API_KEY, JWT_SECRET_KEY, etc.
+    environment:
+      - NEO4J_URI=bolt://neo4j:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=supplychainkg
+      - NEO4J_DATABASE=neo4j
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_RELOAD=false
+      - DEBUG=false
+      - REDIS_HOST=redis              # enables Redis-backed rate limiting
+      - REDIS_PORT=6379
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - supply-chain-network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  neo4j_import:
+  neo4j_plugins:
+  redis_data:
+
+networks:
+  supply-chain-network:
+    driver: bridge

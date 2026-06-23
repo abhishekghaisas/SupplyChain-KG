@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * { box-sizing: border-box; }
+
+  body {
+    @apply bg-canvas text-slate-900;
+  }
+
+  /* Monospace for all IDs and part numbers */
+  .id {
+    @apply font-mono text-sm text-slate-500;
+  }
+}
+
+@layer components {
+  /* Hairline table */
+  .data-table {
+    @apply w-full text-sm border-collapse;
+  }
+  .data-table th {
+    @apply text-left text-xs font-medium text-slate-500 uppercase tracking-wider
+           border-b border-slate-200 pb-2 px-3;
+  }
+  .data-table td {
+    @apply px-3 py-2.5 border-b border-slate-100 align-top;
+  }
+  .data-table tr:last-child td {
+    @apply border-b-0;
+  }
+  .data-table tbody tr:hover td {
+    @apply bg-slate-50;
+  }
+
+  /* Severity / status badges */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-sm;
+  }
+  .badge-critical { @apply bg-red-100 text-red-700; }
+  .badge-high     { @apply bg-amber-100 text-amber-700; }
+  .badge-medium   { @apply bg-blue-100 text-blue-700; }
+  .badge-low      { @apply bg-slate-100 text-slate-600; }
+
+  .badge-released { @apply bg-green-100 text-green-700; }
+  .badge-draft    { @apply bg-slate-100 text-slate-600; }
+  .badge-review   { @apply bg-blue-100 text-blue-700; }
+  .badge-archived { @apply bg-slate-100 text-slate-400; }
+  .badge-rejected { @apply bg-red-100 text-red-700; }
+
+  /* Form inputs */
+  .field {
+    @apply w-full px-3 py-2 text-sm border border-slate-300 rounded
+           focus:outline-none focus:ring-1 focus:ring-slate-400 focus:border-slate-400
+           bg-white;
+  }
+  .field-label {
+    @apply block text-xs font-medium text-slate-600 mb-1;
+  }
+
+  /* Buttons */
+  .btn {
+    @apply inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium
+           rounded border transition-colors cursor-pointer;
+  }
+  .btn-primary {
+    @apply btn bg-slate-900 text-white border-slate-900
+           hover:bg-slate-700;
+  }
+  .btn-secondary {
+    @apply btn bg-white text-slate-700 border-slate-300
+           hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply btn bg-red-600 text-white border-red-600
+           hover:bg-red-700;
+  }
+
+  /* Panel / card */
+  .panel {
+    @apply bg-white border border-slate-200 rounded;
+  }
+  .panel-header {
+    @apply px-4 py-3 border-b border-slate-200 flex items-center justify-between;
+  }
+  .panel-title {
+    @apply text-sm font-semibold text-slate-800;
+  }
+}
