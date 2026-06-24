@@ -22,7 +22,7 @@ class PartCompatibilityRule(BaseRule):
         )
 
     def check(self, original_part: Dict[str, Any], substitute_part: Dict[str, Any],
-                 db=None) -> RuleResult:
+                db=None) -> RuleResult:
         """
         Check if substitute can replace original part.
 
