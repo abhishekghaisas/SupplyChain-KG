@@ -78,7 +78,7 @@ jobs:
           cache: pip
 
       - name: Install lint tools
-        run: pip install flake8 black mypy
+        run: pip install flake8 black==23.11.0 mypy
 
       - name: flake8
         run: |
