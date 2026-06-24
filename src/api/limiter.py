@@ -70,22 +70,28 @@ def _resolve_key(request) -> str:
 
 
 def _make_storage_uri() -> str:
-    """
-    Use Redis if configured, otherwise in-memory.
-
-    In-memory is fine for a single container. For multi-replica deployments
-    set REDIS_HOST (and optionally REDIS_PORT) in .env.
-    """
-    settings = get_settings()
-    if settings.redis_host:
-        port = settings.redis_port or 6379
-        db = settings.redis_db or 0
-        return f"redis://{settings.redis_host}:{port}/{db}"
+    try:
+        settings = get_settings()
+        if settings.redis_host:
+            port = settings.redis_port or 6379
+            db = settings.redis_db or 0
+            return f"redis://{settings.redis_host}:{port}/{db}"
+    except Exception:
+        pass
     return "memory://"
 
 
-limiter = Limiter(
-    key_func=_resolve_key,
-    storage_uri=_make_storage_uri(),
-    default_limits=[DEFAULT_LIMIT],
-)
+def _make_limiter():
+    """Build lazily so tests can patch get_settings before Redis connects."""
+    return Limiter(
+        key_func=_resolve_key,
+        storage_uri=_make_storage_uri(),
+        default_limits=[DEFAULT_LIMIT],
+    )
+
+
+try:
+    limiter = _make_limiter()
+except Exception:
+    # Fall back to in-memory limiter (tests / no Redis)
+    limiter = Limiter(key_func=_resolve_key, default_limits=[DEFAULT_LIMIT])

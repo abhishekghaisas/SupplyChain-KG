@@ -53,6 +53,22 @@ from pydantic import BaseModel
 from src.api.limiter import AUTH_LIMIT, limiter
 from src.config import get_settings
 
+# Exposed at module level for test patching
+def validate_and_consume_refresh_token(jti: str):
+    from src.api.token_store import validate_and_consume_refresh_token as _fn
+    return _fn(jti)
+
+
+def store_refresh_token(jti: str, client_id: str, expire_seconds: int):
+    from src.api.token_store import store_refresh_token as _fn
+    return _fn(jti, client_id, expire_seconds)
+
+
+def revoke_refresh_token(jti: str):
+    from src.api.token_store import revoke_refresh_token as _fn
+    return _fn(jti)
+
+
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 

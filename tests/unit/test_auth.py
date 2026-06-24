@@ -50,7 +50,11 @@ class _TestSettings:
     api_reload  = False
     api_log_level = "info"
     debug       = False
+    refresh_expire_days = 7
     anthropic_api_key = "test"
+    redis_host = None
+    redis_port = None
+    redis_db = 0
 
 
 @pytest.fixture(autouse=True)

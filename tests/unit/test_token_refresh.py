@@ -51,10 +51,19 @@ class _TestSettings:
     api_host    = "0.0.0.0"; api_port = 8000
     api_reload  = False; api_log_level = "info"; debug = False
     anthropic_api_key = "test"
-    redis_host = "localhost"; redis_port = 6379; redis_db = 0
+    redis_host = None; redis_port = None; redis_db = 0
 
 
 # ── Fixtures ──────────────────────────────────────────────────────────────────
+
+@pytest.fixture(autouse=True)
+def reset_app_overrides():
+    """Ensure dependency overrides are clean before and after every test."""
+    from src.api.main import app
+    app.dependency_overrides.clear()
+    yield
+    app.dependency_overrides.clear()
+
 
 @pytest.fixture(autouse=True)
 def patch_settings():
@@ -112,13 +121,26 @@ def app_client(mock_store):
          patch("src.api.auth.validate_and_consume_refresh_token",
                side_effect=mock_store.validate_and_consume_refresh_token), \
          patch("src.api.auth.revoke_refresh_token",
+               side_effect=mock_store.revoke_refresh_token), \
+         patch("src.api.token_store.store_refresh_token",
+               side_effect=lambda jti, client_id, ttl: mock_store._store.update({jti: client_id})), \
+         patch("src.api.token_store.validate_and_consume_refresh_token",
+               side_effect=mock_store.validate_and_consume_refresh_token), \
+         patch("src.api.token_store.revoke_refresh_token",
                side_effect=mock_store.revoke_refresh_token):
+        app.dependency_overrides[get_db] = lambda: (yield mock_db)
         with TestClient(app, raise_server_exceptions=False) as c:
             yield c, mock_store
 
     app.state.limiter = original
     lmod.limiter = original
     app.dependency_overrides.clear()
+    try:
+        import src.api.token_store as _ts
+        if hasattr(_ts, '_redis_client'):
+            _ts._redis_client = None
+    except Exception:
+        pass
 
 
 def _patched_create_refresh(mock_store):
@@ -191,7 +213,9 @@ class TestRefreshEndpoint:
 
     def test_new_access_token_issued(self, app_client):
         client, _ = app_client
+        import time
         body1 = _get_tokens(client).json()
+        time.sleep(1)  # ensure different iat/exp so tokens differ
         r = client.post("/auth/refresh", data={
             "grant_type":    "refresh_token",
             "refresh_token": body1["refresh_token"],

@@ -21,7 +21,7 @@ class PartCompatibilityRule(BaseRule):
             severity=RuleSeverity.CRITICAL,
         )
 
-    def check(self, original_part: Dict[str, Any], substitute_part: Dict[str, Any]) -> RuleResult:
+    def check(self, original_part: Dict[str, Any], substitute_part: Dict[str, Any], db=None) -> RuleResult:
         """
         Check if substitute can replace original part.
 
@@ -258,6 +258,10 @@ class PriceReasonablenessRule(BaseRule):
         max_deviation_percent: float = 30.0,
         trend_window: Optional[int] = None,
         competitor_prices: Optional[list] = None,
+        outlier_sigma: Optional[float] = None,
+        benchmark_deviation_percent: Optional[float] = None,
+        part_id: Optional[str] = None,
+        supplier_id: Optional[str] = None,
     ) -> RuleResult:
         """
         Check if price is within reasonable range.
@@ -265,18 +269,30 @@ class PriceReasonablenessRule(BaseRule):
         Args:
             current_price: Price being evaluated
             historical_prices: List of historical prices
-            max_deviation_percent: Maximum acceptable deviation
-            trend_window: If set, check for price trend over last N periods
-            competitor_prices: If set, benchmark against competitor prices
-
-        Returns:
-            RuleResult
+            max_deviation_percent: Maximum acceptable deviation from average
+            trend_window: If set, also check price trend over last N periods
+            competitor_prices: If set, benchmark against competitor median
+            outlier_sigma: If set, flag if price is N standard deviations out
+            benchmark_deviation_percent: Override max_deviation for benchmark check
+            part_id: Part identifier (recorded in facts_used)
+            supplier_id: Supplier identifier (recorded in facts_used)
         """
+        import math
+
+        # Record provenance facts
+        self.facts_used = [f"current_price:{current_price}"]
+        if part_id:
+            self.facts_used.append(f"part_id:{part_id}")
+        if supplier_id:
+            self.facts_used.append(f"supplier_id:{supplier_id}")
+        if historical_prices:
+            self.facts_used.append(f"historical_data_points:{len(historical_prices)}")
+
         if not historical_prices:
             return self._create_result(
                 passed=True,
                 reason="No historical data to compare",
-                details={"note": "First price for this item"},
+                details={"note": "First price for this item", "sigma_distance": None},
                 confidence=0.5,
             )
 
@@ -289,58 +305,98 @@ class PriceReasonablenessRule(BaseRule):
             "deviation_percent": deviation_percent,
         }
 
-        # Trend analysis
-        if trend_window and len(historical_prices) >= trend_window:
-            window = historical_prices[-trend_window:]
-            trend_avg = sum(window) / len(window)
-            trend_deviation = ((current_price - trend_avg) / trend_avg) * 100
-            details["trend_window"] = trend_window
-            details["trend_average"] = trend_avg
-            details["trend_deviation_percent"] = trend_deviation
-            if abs(trend_deviation) > max_deviation_percent:
-                return self._create_result(
-                    passed=False,
-                    reason=(
-                        f"Price trend deviation {trend_deviation:.1f}% "
-                        f"exceeds maximum {max_deviation_percent}%"
-                    ),
-                    details=details,
-                    confidence=0.9,
-                )
+        failures = []
 
-        # Competitor benchmark
-        if competitor_prices:
-            sorted_competitors = sorted(competitor_prices)
-            median_idx = len(sorted_competitors) // 2
-            competitor_median = sorted_competitors[median_idx]
-            benchmark_deviation = ((current_price - competitor_median) / competitor_median) * 100
-            details["competitor_median"] = competitor_median
-            details["benchmark_deviation_percent"] = benchmark_deviation
-            if benchmark_deviation > max_deviation_percent:
-                return self._create_result(
-                    passed=False,
-                    reason=(
-                        f"Price {benchmark_deviation:.1f}% above competitor "
-                        f"median (max {max_deviation_percent}%)"
-                    ),
-                    details=details,
-                    confidence=0.9,
-                )
-
-        if deviation_percent > max_deviation_percent:
+        # ── Zero / invalid price ─────────────────────────────────────────────
+        if current_price <= 0:
             return self._create_result(
                 passed=False,
-                reason=(
-                    f"Price deviation {deviation_percent:.1f}% "
-                    f"exceeds maximum {max_deviation_percent}%"
-                ),
+                reason=f"Invalid price: {current_price} (must be > 0)",
+                details=details,
+                confidence=1.0,
+            )
+
+        # ── Statistical outlier (sigma) ──────────────────────────────────────
+        sigma_distance = None
+        if len(historical_prices) > 1:
+            mean = avg_price
+            variance = sum((p - mean) ** 2 for p in historical_prices) / len(historical_prices)
+            std_dev = math.sqrt(variance)
+            if std_dev > 0:
+                sigma_distance = abs(current_price - mean) / std_dev
+                threshold = outlier_sigma if outlier_sigma is not None else 2.0
+                if sigma_distance > threshold:
+                    failures.append(
+                        f"Statistical outlier: {sigma_distance:.1f}σ "
+                        f"from mean (threshold {threshold}σ)"
+                    )
+        details["sigma_distance"] = sigma_distance
+
+        # ── Trend analysis ───────────────────────────────────────────────────
+        trend_info: dict = {"analyzed": False}
+        if trend_window is not None:
+            if len(historical_prices) >= trend_window:
+                window = historical_prices[-trend_window:]
+                trend_avg = sum(window) / len(window)
+                trend_deviation = (current_price - trend_avg) / trend_avg * 100
+                trend_info = {
+                    "analyzed": True,
+                    "window": trend_window,
+                    "trend_average": trend_avg,
+                    "trend_deviation_percent": trend_deviation,
+                }
+                details["trend_average"] = trend_avg
+                details["trend_deviation_percent"] = trend_deviation
+                if abs(trend_deviation) > max_deviation_percent:
+                    failures.append(
+                        f"Trend deviation {trend_deviation:.1f}% "
+                        f"exceeds {max_deviation_percent}%"
+                    )
+            else:
+                trend_info = {"analyzed": False, "reason": "insufficient_data"}
+        details["trend"] = trend_info
+
+        # ── Competitor benchmark ─────────────────────────────────────────────
+        if competitor_prices:
+            sorted_c = sorted(competitor_prices)
+            median_idx = len(sorted_c) // 2
+            competitor_median = sorted_c[median_idx]
+            bench_dev = (current_price - competitor_median) / competitor_median * 100
+            bench_limit = (
+                benchmark_deviation_percent
+                if benchmark_deviation_percent is not None
+                else max_deviation_percent
+            )
+            details["benchmark"] = {
+                "competitor_median": competitor_median,
+                "benchmark_deviation_percent": bench_dev,
+                "limit": bench_limit,
+            }
+            details["competitor_median"] = competitor_median
+            details["benchmark_deviation_percent"] = bench_dev
+            if bench_dev > bench_limit:
+                failures.append(
+                    f"Price {bench_dev:.1f}% above competitor median " f"(limit {bench_limit}%)"
+                )
+
+        # ── Standard deviation check ─────────────────────────────────────────
+        if deviation_percent > max_deviation_percent:
+            failures.append(
+                f"Price deviation {deviation_percent:.1f}% "
+                f"exceeds maximum {max_deviation_percent}%"
+            )
+
+        if failures:
+            return self._create_result(
+                passed=False,
+                reason="; ".join(failures),
                 details=details,
                 confidence=0.9,
             )
 
         return self._create_result(
             passed=True,
-            reason=f"Price within acceptable range (deviation: {deviation_percent:.1f}%)",
+            reason=(f"Price within acceptable range " f"(deviation: {deviation_percent:.1f}%)"),
             details=details,
             confidence=0.9,
         )
