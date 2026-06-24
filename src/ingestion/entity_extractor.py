@@ -8,9 +8,6 @@ from dataclasses import dataclass
 from enum import Enum
 
 from anthropic import Anthropic
-from langchain_anthropic import ChatAnthropic
-from langchain.prompts import ChatPromptTemplate
-from langchain.output_parsers import PydanticOutputParser
 from pydantic import BaseModel, Field
 from loguru import logger
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -301,15 +298,22 @@ class ClaudeEntityExtractor:
         # Initialize Anthropic client
         self.client = Anthropic(api_key=self.api_key)
 
-        # Initialize LangChain client for structured output
-        self.llm = ChatAnthropic(
-            anthropic_api_key=self.api_key,
-            model=self.model,
-            temperature=self.temperature,
-            max_tokens=self.max_tokens,
-        )
+        # LangChain client initialised lazily in extract_from_text
+        self._llm = None
 
         logger.info(f"Initialized ClaudeEntityExtractor with model: {self.model}")
+
+    def _get_llm(self):
+        """Lazy-initialise LangChain client to avoid import errors at module load."""
+        if self._llm is None:
+            from langchain_anthropic import ChatAnthropic
+            self._llm = ChatAnthropic(
+                anthropic_api_key=self.api_key,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+        return self._llm
 
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def extract_from_text(
@@ -360,7 +364,7 @@ Extract all supply chain entities from this document.""",
         )
 
         # Build chain
-        chain = prompt | self.llm | parser
+        chain = prompt | self._get_llm() | parser
 
         try:
             # Execute extraction
@@ -425,7 +429,7 @@ Focus on part numbers, names, categories, and specifications.
             ]
         )
 
-        chain = prompt | self.llm | parser
+        chain = prompt | self._get_llm() | parser
 
         try:
             # For multiple parts, we'll need to chunk or use a different approach
