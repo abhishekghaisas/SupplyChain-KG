@@ -56,4 +56,4 @@ python-jose[cryptography]==3.3.0
 
 
 redis>=4.0.0
-sentence-transformers==5.1.2
+sentence-transformers==5.1.2black==23.11.0
