@@ -117,7 +117,7 @@ class PartCompatibilityRule(BaseRule):
         if original_part.get('category') != substitute_part.get('category'):
             return self._create_result(
                 passed=False,
-                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",
+                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # noqa: E501
                 details={
                     "original_category": original_part.get('category'),
                     "substitute_category": substitute_part.get('category')
@@ -210,7 +210,7 @@ class LeadTimeFeasibilityRule(BaseRule):
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
-                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",
+                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",  # noqa: E501
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
@@ -354,7 +354,7 @@ class PriceReasonablenessRule(BaseRule):
         if deviation_percent > max_deviation_percent:
             return self._create_result(
                 passed=False,
-                reason=f"Price deviation {deviation_percent:.1f}% exceeds maximum {max_deviation_percent}%",
+                reason=f"Price deviation {deviation_percent:.1f}% exceeds maximum {max_deviation_percent}%",  # noqa: E501
                 details={
                     "current_price": current_price,
                     "average_price": avg_price,

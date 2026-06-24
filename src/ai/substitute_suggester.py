@@ -149,7 +149,7 @@ class SubstituteSuggester:
     spec compatibility with explicit reasoning for each comparison.
     """
 
-    _SYSTEM_PROMPT = """You are a supply chain engineer evaluating whether one part can substitute for another.
+    _SYSTEM_PROMPT = """You are a supply chain engineer evaluating whether one part can substitute for another.  # noqa: E501
 
 Your job is to compare two parts' specifications and give a structured compatibility assessment.
 

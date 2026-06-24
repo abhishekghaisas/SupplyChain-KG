@@ -72,7 +72,7 @@ class ReasoningResult:
     @property
     def warnings(self) -> List[RuleResult]:
         """Get warnings."""
-        return [r for r in self.rules_applied if not r.passed and r.severity == RuleSeverity.WARNING]
+        return [r for r in self.rules_applied if not r.passed and r.severity == RuleSeverity.WARNING]  # noqa: E501
 
     def __str__(self) -> str:
         status = "✓ PASSED" if self.passed else "✗ FAILED"

@@ -17,7 +17,7 @@ from src.config import get_settings
 class Neo4jClient:
     """Client for interacting with Neo4j knowledge graph."""
 
-    def __init__(self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):
+    def __init__(self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):  # noqa: E501
         """
         Initialize Neo4j client.
 
@@ -305,7 +305,7 @@ class Neo4jClient:
         MATCH (s:Supplier {id: $supplier_id})
         MATCH (p:Part {id: $part_id})
         MERGE (s)-[r:SUPPLIES {valid_from: date($valid_from)}]->(p)
-        SET r.valid_to                = CASE WHEN $valid_to IS NULL THEN NULL ELSE date($valid_to) END,
+        SET r.valid_to                = CASE WHEN $valid_to IS NULL THEN NULL ELSE date($valid_to) END,  # noqa: E501
             r.lead_time_days          = $lead_time_days,
             r.price                   = $price,
             r.currency                = $currency,
@@ -320,7 +320,7 @@ class Neo4jClient:
         parameters = {
             "supplier_id":           supplier_id,
             "part_id":               part_id,
-            "valid_from":            str(valid_from) if isinstance(valid_from, date) else valid_from,
+            "valid_from":            str(valid_from) if isinstance(valid_from, date) else valid_from,  # noqa: E501
             "valid_to":              str(valid_to) if isinstance(valid_to, date) else valid_to,
             "lead_time_days":        lead_time_days,
             "price":                 price,
@@ -418,7 +418,7 @@ class Neo4jClient:
             "supplier_id": supplier_id,
             "affected_parts_count": len(affected_parts),
             "affected_parts": affected_parts,
-            "critical_parts": [p for p in affected_parts if p["criticality"] in ["HIGH", "CRITICAL"]]
+            "critical_parts": [p for p in affected_parts if p["criticality"] in ["HIGH", "CRITICAL"]]  # noqa: E501
         }
 
     # ─── BOM ──────────────────────────────────────────────────────────────────────

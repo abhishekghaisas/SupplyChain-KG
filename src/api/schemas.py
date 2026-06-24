@@ -92,7 +92,7 @@ class RuleResultResponse(BaseModel):
     rule_type: str
     reason: str
     failure_severity: str = Field(
-        description="Severity that applies if this rule fails — not an indicator of the current result"
+        description="Severity that applies if this rule fails — not an indicator of the current result"  # noqa: E501
     )
     confidence: float
     details: Dict[str, Any] = {}

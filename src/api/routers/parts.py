@@ -227,7 +227,7 @@ def persist_substitutes(
     BOM reviews and disruption analysis as "inferred substitute — requires validation."
     Engineers can then VERIFY or REJECT them via the compatibility tab.
     """
-    from src.ai.substitute_suggester import SubstituteSuggester, SubstituteSuggestion, SpecComparison
+    from src.ai.substitute_suggester import SubstituteSuggester, SubstituteSuggestion, SpecComparison  # noqa: E501
 
     rows = db.execute_query(
         "MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id}

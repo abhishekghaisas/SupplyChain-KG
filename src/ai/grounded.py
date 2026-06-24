@@ -133,14 +133,14 @@ class GroundedClient:
     """
 
     # System prompt preamble applied to every call — the grounding contract
-    _GROUNDING_PREAMBLE = """You are a supply chain intelligence assistant with access to a live knowledge graph.
+    _GROUNDING_PREAMBLE = """You are a supply chain intelligence assistant with access to a live knowledge graph.  # noqa: E501
 
 CRITICAL RULES — you must follow these without exception:
 1. Base ALL your analysis ONLY on the data provided in this prompt.
-2. Never use your training knowledge to fill in supply chain facts (prices, lead times, certifications, supplier names, part specifications). If a fact is not in the provided data, say it is "not on record."
-3. When you cite a fact, reference the specific ID, name, or value from the data (e.g. "P-12345 (Servo Motor SM-400)" not just "the servo motor").
-4. If critical data is missing or incomplete, flag it explicitly as a risk or gap — never assume or guess.
-5. Be concise and direct. This analysis will be read by engineers making purchasing and approval decisions.
+2. Never use your training knowledge to fill in supply chain facts (prices, lead times, certifications, supplier names, part specifications). If a fact is not in the provided data, say it is "not on record."  # noqa: E501
+3. When you cite a fact, reference the specific ID, name, or value from the data (e.g. "P-12345 (Servo Motor SM-400)" not just "the servo motor").  # noqa: E501
+4. If critical data is missing or incomplete, flag it explicitly as a risk or gap — never assume or guess.  # noqa: E501
+5. Be concise and direct. This analysis will be read by engineers making purchasing and approval decisions.  # noqa: E501
 
 GRAPH SCHEMA (for your reference — all data in this prompt comes from this schema):
 
@@ -1093,7 +1093,7 @@ class NLQueryEngine:
         Returns the raw Cypher string. Raises ValueError if the question
         cannot be answered from the schema or requires a write operation.
         """
-        system = f"""You are a Neo4j Cypher expert. Convert natural language questions into Cypher queries.
+        system = f"""You are a Neo4j Cypher expert. Convert natural language questions into Cypher queries.  # noqa: E501
 
 {_GRAPH_SCHEMA}
 

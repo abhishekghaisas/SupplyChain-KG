@@ -264,7 +264,7 @@ class ClaudeEntityExtractor:
 
         # Create prompt
         prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert at extracting structured information from supply chain documents.
+            ("system", """You are an expert at extracting structured information from supply chain documents.  # noqa: E501
 Extract parts, suppliers, and their relationships with high accuracy.
 
 Pay special attention to:
@@ -384,7 +384,7 @@ Focus on part numbers, names, categories, and specifications.
         EXTRACTION_MAX_TOKENS = 8192
         CHUNK_SIZE = 6000   # characters; keeps response well within token budget
 
-        system_prompt = """You are an expert at extracting structured information from supply chain documents.
+        system_prompt = """You are an expert at extracting structured information from supply chain documents.  # noqa: E501
 
 Extract the following information and return as valid JSON:
 {
@@ -451,7 +451,7 @@ Rules:
                 return _clean_and_parse(raw)
             except json.JSONDecodeError as first_err:
                 logger.warning(
-                    f"JSON parse failed on first attempt ({first_err}), retrying with conciseness hint"
+                    f"JSON parse failed on first attempt ({first_err}), retrying with conciseness hint"  # noqa: E501
                 )
                 retry_hint = (
                     "IMPORTANT: Your previous response contained invalid JSON. "

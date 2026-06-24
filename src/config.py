@@ -51,7 +51,7 @@ class Settings(BaseSettings):
 
     # OAuth2 client credentials
     # client_secret_hash is a bcrypt hash of the actual secret.
-    # Generate with: python -c "import bcrypt; print(bcrypt.hashpw(b'secret', bcrypt.gensalt()).decode())"
+    # Generate with: python -c "import bcrypt; print(bcrypt.hashpw(b'secret', bcrypt.gensalt()).decode())"  # noqa: E501
     oauth2_client_id: str = Field(
         default="supply-chain-api",
         description="OAuth2 client_id accepted at POST /auth/token",
