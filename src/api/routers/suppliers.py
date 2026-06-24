@@ -2,8 +2,7 @@
 Suppliers router — CRUD and disruption-impact queries.
 """
 
-import json
-from typing import List, Optional
+from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -91,6 +90,7 @@ def _assert_supplier_exists(supplier_id: str, db: Neo4jClient) -> None:
 
 # ── AI-powered qualification ───────────────────────────────────────────────────
 
+
 @router.post("/{supplier_id}/ai-qualify", dependencies=[Depends(verify_token)])
 def ai_qualify_supplier(supplier_id: str, db: Neo4jClient = Depends(get_db)):
     """
@@ -111,7 +111,7 @@ def ai_qualify_supplier(supplier_id: str, db: Neo4jClient = Depends(get_db)):
         raise HTTPException(status_code=404, detail=f"Supplier {supplier_id!r} not found")
 
     try:
-        client   = GroundedClient(db)
+        client = GroundedClient(db)
         response = client.qualify_supplier(supplier_id)
         return response.to_dict()
     except Exception as exc:

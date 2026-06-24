@@ -6,8 +6,6 @@ returns structured pass/fail results with confidence, and (for
 compatibility checks) includes a full provenance chain.
 """
 
-import json
-from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException
 

@@ -4,7 +4,7 @@ Neo4j client for knowledge graph operations.
 from __future__ import annotations
 
 import json
-from datetime import date, datetime
+from datetime import date
 from typing import Any, Dict, List, Optional, Union
 
 from neo4j import GraphDatabase, Driver, Session
@@ -16,11 +16,11 @@ from src.config import get_settings
 
 class Neo4jClient:
     """Client for interacting with Neo4j knowledge graph."""
-    
+
     def __init__(self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):
         """
         Initialize Neo4j client.
-        
+
         Args:
             uri: Neo4j connection URI
             user: Database user
@@ -31,9 +31,9 @@ class Neo4jClient:
         self.user = user or settings.neo4j_user
         self.password = password or settings.neo4j_password
         self.database = settings.neo4j_database
-        
+
         self._driver: Optional[Driver] = None
-        
+
     def connect(self) -> None:
         """Establish connection to Neo4j."""
         try:
@@ -47,29 +47,29 @@ class Neo4jClient:
         except ServiceUnavailable as e:
             logger.error(f"Failed to connect to Neo4j: {e}")
             raise
-            
+
     def close(self) -> None:
         """Close connection to Neo4j."""
         if self._driver:
             self._driver.close()
             logger.info("Neo4j connection closed")
-            
+
     def __enter__(self):
         """Context manager entry."""
         self.connect()
         return self
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Context manager exit."""
         self.close()
-        
+
     @property
     def session(self) -> Session:
         """Get a new session."""
         if not self._driver:
             raise RuntimeError("Not connected to Neo4j. Call connect() first.")
         return self._driver.session(database=self.database)
-        
+
     def execute_query(
         self,
         query: str,
@@ -77,18 +77,18 @@ class Neo4jClient:
     ) -> List[Dict[str, Any]]:
         """
         Execute a Cypher query and return results.
-        
+
         Args:
             query: Cypher query string
             parameters: Query parameters
-            
+
         Returns:
             List of result records as dictionaries
         """
         with self.session as session:
             result = session.run(query, parameters or {})
             return [dict(record) for record in result]
-            
+
     def execute_write(
         self,
         query: str,
@@ -96,14 +96,14 @@ class Neo4jClient:
     ) -> None:
         """
         Execute a write query.
-        
+
         Args:
             query: Cypher query string
             parameters: Query parameters
         """
         with self.session as session:
             session.execute_write(lambda tx: tx.run(query, parameters or {}))
-            
+
     def create_constraints(self) -> None:
         """Create necessary database constraints and indexes."""
         constraints = [
@@ -112,21 +112,21 @@ class Neo4jClient:
             "CREATE CONSTRAINT supplier_id IF NOT EXISTS FOR (s:Supplier) REQUIRE s.id IS UNIQUE",
             "CREATE CONSTRAINT bom_id IF NOT EXISTS FOR (b:BOM) REQUIRE b.id IS UNIQUE",
             "CREATE CONSTRAINT po_id IF NOT EXISTS FOR (po:PurchaseOrder) REQUIRE po.id IS UNIQUE",
-            
+
             # Indexes for performance
             "CREATE INDEX part_category IF NOT EXISTS FOR (p:Part) ON (p.category)",
             "CREATE INDEX part_criticality IF NOT EXISTS FOR (p:Part) ON (p.criticality)",
             "CREATE INDEX supplier_status IF NOT EXISTS FOR (s:Supplier) ON (s.status)",
             "CREATE INDEX bom_status IF NOT EXISTS FOR (b:BOM) ON (b.status)",
         ]
-        
+
         for constraint in constraints:
             try:
                 self.execute_write(constraint)
                 logger.info(f"Created constraint/index: {constraint[:50]}...")
             except Exception as e:
                 logger.warning(f"Constraint/index may already exist: {e}")
-                
+
     def create_part(
         self,
         part_id: str,
@@ -139,7 +139,7 @@ class Neo4jClient:
     ) -> None:
         """
         Create a Part node.
-        
+
         Args:
             part_id: Unique part identifier
             name: Part name
@@ -152,7 +152,7 @@ class Neo4jClient:
         # Convert specifications dict to JSON string
         specs_json = json.dumps(specifications)
         unit_of_measure = kwargs.pop("unit_of_measure", "EA")
-        
+
         query = """
         MERGE (p:Part {id: $id})
         ON CREATE SET
@@ -171,7 +171,7 @@ class Neo4jClient:
             p.specifications_json = $specifications_json,
             p.unit_of_measure    = $unit_of_measure
         """
-        
+
         parameters = {
             "id": part_id,
             "name": name,
@@ -182,7 +182,7 @@ class Neo4jClient:
             "unit_of_measure": unit_of_measure,
             **kwargs
         }
-        
+
         self.execute_write(query, parameters)
         logger.info(f"Created Part: {part_id}")
         # Generate embedding for similarity search (non-blocking — failure won't break create)
@@ -195,7 +195,7 @@ class Neo4jClient:
             vec_upsert(part_id, "part", name, embed(text))
         except Exception as _e:
             logger.debug(f"Part embedding skipped: {_e}")
-        
+
     def create_supplier(
         self,
         supplier_id: str,
@@ -207,7 +207,7 @@ class Neo4jClient:
     ) -> None:
         """
         Create a Supplier node.
-        
+
         Args:
             supplier_id: Unique supplier identifier
             name: Supplier name
@@ -222,7 +222,7 @@ class Neo4jClient:
         tier = kwargs.pop('tier', 2)
         rating = kwargs.pop('rating', 0.0)
         established_date = kwargs.pop('established_date', None)
-        
+
         query = """
         MERGE (s:Supplier {id: $id})
         ON CREATE SET
@@ -245,7 +245,7 @@ class Neo4jClient:
             s.rating            = $rating,
             s.established_date  = $established_date
         """
-        
+
         parameters = {
             "id": supplier_id,
             "name": name,
@@ -258,7 +258,7 @@ class Neo4jClient:
             "established_date": established_date,
             **kwargs
         }
-        
+
         self.execute_write(query, parameters)
         logger.info(f"Created Supplier: {supplier_id}")
         try:
@@ -269,7 +269,7 @@ class Neo4jClient:
             vec_upsert(supplier_id, "supplier", name, embed(text))
         except Exception as _e:
             logger.debug(f"Supplier embedding skipped: {_e}")
-        
+
     def create_supplies_relationship(
         self,
         supplier_id: str,
@@ -283,7 +283,7 @@ class Neo4jClient:
     ) -> None:
         """
         Create SUPPLIES relationship between Supplier and Part.
-        
+
         Args:
             supplier_id: Supplier ID
             part_id: Part ID
@@ -295,11 +295,11 @@ class Neo4jClient:
             **kwargs: Additional properties
         """
         # Extract optional fields from kwargs with defaults
-        min_order_quantity    = kwargs.pop("min_order_quantity", None)
+        min_order_quantity = kwargs.pop("min_order_quantity", None)
         on_time_delivery_rate = kwargs.pop("on_time_delivery_rate", None)
-        quality_rating        = kwargs.pop("quality_rating", None)
-        source                = kwargs.pop("source", "manual_entry")
-        confidence            = kwargs.pop("confidence", 1.0)
+        quality_rating = kwargs.pop("quality_rating", None)
+        source = kwargs.pop("source", "manual_entry")
+        confidence = kwargs.pop("confidence", 1.0)
 
         query = """
         MATCH (s:Supplier {id: $supplier_id})
@@ -331,17 +331,17 @@ class Neo4jClient:
             "source":                source,
             "confidence":            confidence,
         }
-        
+
         self.execute_write(query, parameters)
         logger.info(f"Created SUPPLIES: {supplier_id} -> {part_id}")
-        
+
     def query_current_suppliers(self, part_id: str) -> List[Dict[str, Any]]:
         """
         Get all current suppliers for a part.
-        
+
         Args:
             part_id: Part identifier
-            
+
         Returns:
             List of supplier information with relationship details
         """
@@ -358,9 +358,9 @@ class Neo4jClient:
                r.on_time_delivery_rate as on_time_delivery_rate
         ORDER BY r.lead_time_days
         """
-        
+
         return self.execute_query(query, {"part_id": part_id})
-        
+
     def query_suppliers_at_date(
         self,
         part_id: str,
@@ -368,11 +368,11 @@ class Neo4jClient:
     ) -> List[Dict[str, Any]]:
         """
         Get suppliers for a part as of a specific date (temporal query).
-        
+
         Args:
             part_id: Part identifier
             as_of_date: Date for historical query
-            
+
         Returns:
             List of supplier information as of that date
         """
@@ -388,17 +388,17 @@ class Neo4jClient:
                r.valid_to as valid_to
         ORDER BY r.price
         """
-        
+
         date_str = str(as_of_date) if isinstance(as_of_date, date) else as_of_date
         return self.execute_query(query, {"part_id": part_id, "as_of_date": date_str})
-        
+
     def assess_supplier_disruption(self, supplier_id: str) -> Dict[str, Any]:
         """
         Assess impact of supplier disruption.
-        
+
         Args:
             supplier_id: Supplier identifier
-            
+
         Returns:
             Dictionary with affected parts and criticality analysis
         """
@@ -411,16 +411,15 @@ class Neo4jClient:
                COUNT{(b:BOM)-[:CONTAINS]->(:Component)-[:REFERENCES]->(p)} as bom_count
         ORDER BY p.criticality DESC, bom_count DESC
         """
-        
+
         affected_parts = self.execute_query(query, {"supplier_id": supplier_id})
-        
+
         return {
             "supplier_id": supplier_id,
             "affected_parts_count": len(affected_parts),
             "affected_parts": affected_parts,
             "critical_parts": [p for p in affected_parts if p["criticality"] in ["HIGH", "CRITICAL"]]
         }
-        
 
     # ─── BOM ──────────────────────────────────────────────────────────────────────
 

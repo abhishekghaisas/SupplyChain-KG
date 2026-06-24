@@ -470,9 +470,9 @@ ORDER BY parts_supplied DESC"""
             model: Claude model to use. Defaults to config claude_model.
         """
         settings = get_settings()
-        self.db      = db
-        self.model   = model or settings.claude_model
-        self.client  = Anthropic(api_key=settings.anthropic_api_key)
+        self.db = db
+        self.model = model or settings.claude_model
+        self.client = Anthropic(api_key=settings.anthropic_api_key)
 
     def _call(
         self,
@@ -523,7 +523,7 @@ ORDER BY parts_supplied DESC"""
         response_text = message.content[0].text
 
         cache_tokens_written = getattr(message.usage, "cache_creation_input_tokens", 0) or 0
-        cache_tokens_read    = getattr(message.usage, "cache_read_input_tokens", 0) or 0
+        cache_tokens_read = getattr(message.usage, "cache_read_input_tokens", 0) or 0
 
         logger.info(
             f"Grounded response: {message.usage.input_tokens} in / "
@@ -816,12 +816,9 @@ These are the highest-priority items to address.""".format(
         return self._call(context, prompt, max_tokens=1500)
 
 
-
-
 # ── Reranking ─────────────────────────────────────────────────────────────────
-
 _CRITICALITY_RANK = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
-_SEVERITY_RANK    = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
+_SEVERITY_RANK = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
 
 
 def rerank_search_results(
@@ -840,11 +837,12 @@ def rerank_search_results(
     above LOW parts even if they have similar semantic scores.
     """
     def _score(r: Dict) -> float:
-        base      = float(r.get("score", 0.0))
+        base = float(r.get("score", 0.0))
         crit_rank = _CRITICALITY_RANK.get(
             (r.get("data") or {}).get("criticality", ""), 0
         )
-        type_bonus = 0.05 if (boost_entity_type and r.get("entity_type") == boost_entity_type) else 0.0
+        type_bonus = 0.05 if (boost_entity_type and r.get(
+            "entity_type") == boost_entity_type) else 0.0
         return base + (crit_rank * 0.02) + type_bonus
 
     return sorted(results, key=_score, reverse=True)
@@ -864,7 +862,7 @@ def rerank_nl_query_rows(
     """
     def _score(row: Dict) -> float:
         score = 0.0
-        vals  = list(row.values())
+        vals = list(row.values())
 
         # Criticality bonus
         for v in vals:
@@ -899,9 +897,9 @@ def rerank_disruption_boms(affected_boms: List[Dict]) -> List[Dict]:
     critical/high parts float to the top regardless of raw severity score.
     """
     def _score(bom: Dict) -> float:
-        base     = float(bom.get("severity_score", 0.0))
-        actions  = bom.get("actions", [])
-        parts    = bom.get("disrupted_parts", [])
+        base = float(bom.get("severity_score", 0.0))
+        actions = bom.get("actions", [])
+        parts = bom.get("disrupted_parts", [])
 
         escalate_bonus = 0.3 if "ESCALATE" in actions else 0.0
 
@@ -919,6 +917,7 @@ def rerank_disruption_boms(affected_boms: List[Dict]) -> List[Dict]:
     return sorted(affected_boms, key=_score, reverse=True)
 
 # ── Natural language graph query ───────────────────────────────────────────────
+
 
 # Graph schema description — injected into every NL query prompt.
 # This is the "grounding" for query generation: Claude knows exactly what
@@ -1051,13 +1050,13 @@ class NLQueryEngine:
 
     def __init__(self, db, model: Optional[str] = None):
         settings = get_settings()
-        self.db     = db
-        self.model  = model or settings.claude_model
+        self.db = db
+        self.model = model or settings.claude_model
         self.client = Anthropic(api_key=settings.anthropic_api_key)
-        self._prompt_tokens  = 0
-        self._output_tokens  = 0
-        self._cache_written  = 0
-        self._cache_read     = 0
+        self._prompt_tokens = 0
+        self._output_tokens = 0
+        self._cache_written = 0
+        self._cache_read = 0
 
     def _call(self, system: str, user: str, max_tokens: int = 800) -> str:
         """Call Claude with cached system prompt (schema is static — ideal for caching)."""
@@ -1071,10 +1070,10 @@ class NLQueryEngine:
             }],
             messages=[{"role": "user", "content": user}],
         )
-        self._prompt_tokens  += msg.usage.input_tokens
-        self._output_tokens  += msg.usage.output_tokens
-        self._cache_written  += getattr(msg.usage, "cache_creation_input_tokens", 0) or 0
-        self._cache_read     += getattr(msg.usage, "cache_read_input_tokens", 0) or 0
+        self._prompt_tokens += msg.usage.input_tokens
+        self._output_tokens += msg.usage.output_tokens
+        self._cache_written += getattr(msg.usage, "cache_creation_input_tokens", 0) or 0
+        self._cache_read += getattr(msg.usage, "cache_read_input_tokens", 0) or 0
         return msg.content[0].text.strip()
 
     def _validate_cypher(self, cypher: str) -> None:
@@ -1196,7 +1195,7 @@ Answer the question with inline citations for every factual claim."""
         self._prompt_tokens = 0
         self._output_tokens = 0
         self._cache_written = 0
-        self._cache_read    = 0
+        self._cache_read = 0
 
         logger.info(f"NL query: {question!r}")
 

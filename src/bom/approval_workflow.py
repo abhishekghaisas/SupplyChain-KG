@@ -38,7 +38,7 @@ Public API
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -59,8 +59,8 @@ from src.reasoning.rules_engine import (
 # ── Status & transition model ─────────────────────────────────────────────────
 
 class BOMStatus(str, Enum):
-    DRAFT    = "DRAFT"
-    REVIEW   = "REVIEW"
+    DRAFT = "DRAFT"
+    REVIEW = "REVIEW"
     RELEASED = "RELEASED"
     ARCHIVED = "ARCHIVED"
     REJECTED = "REJECTED"
@@ -210,7 +210,7 @@ class BOMWorkflow:
         rules_engine: Optional[RulesEngine] = None,
     ) -> None:
         self._client = client
-        self._rules  = rules_engine or self._build_default_rules_engine()
+        self._rules = rules_engine or self._build_default_rules_engine()
 
     # ── Public API ────────────────────────────────────────────────────────
 
@@ -322,7 +322,7 @@ class BOMWorkflow:
         if target == BOMStatus.RELEASED:
             gate = self._run_release_gate(bom_id)
             rules_result = gate["rules_result"]
-            approval     = gate["approval"]
+            approval = gate["approval"]
 
             if not rules_result.passed:
                 logger.warning(f"BOM {bom_id!r} release blocked by rules: {rules_result.summary}")

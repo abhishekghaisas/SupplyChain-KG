@@ -25,7 +25,6 @@ Public API
 from __future__ import annotations
 
 import json
-import math
 from dataclasses import dataclass
 from typing import List, Literal, Optional
 
@@ -48,7 +47,7 @@ def _get_redis():
     s = get_settings()
     host = s.redis_host or "localhost"
     port = s.redis_port or 6379
-    db   = (s.redis_db or 0) + 3   # db+3 — separate from other Redis uses
+    db = (s.redis_db or 0) + 3   # db+3 — separate from other Redis uses
     return redis_lib.Redis(host=host, port=port, db=db, decode_responses=True,
                            socket_connect_timeout=1)
 

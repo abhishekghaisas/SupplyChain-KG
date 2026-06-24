@@ -102,7 +102,6 @@ class SubstituteSuggestion:
         }
 
 
-
 def rerank_substitute_suggestions(
     suggestions: List["SubstituteSuggestion"],
     source_category: str,
@@ -122,9 +121,9 @@ def rerank_substitute_suggestions(
     MATERIAL_DIFF_PENALTY = 0.15   # per material spec mismatch
 
     def _score(s: "SubstituteSuggestion") -> float:
-        verdict_weight  = VERDICT_WEIGHT.get(s.verdict, 0.5)
-        category_bonus  = 1.0  # same category enforced upstream
-        material_diffs  = sum(
+        verdict_weight = VERDICT_WEIGHT.get(s.verdict, 0.5)
+        category_bonus = 1.0  # same category enforced upstream
+        material_diffs = sum(
             1 for sc in s.spec_comparisons
             if not sc.match and sc.material
         )
@@ -141,6 +140,7 @@ def rerank_substitute_suggestions(
     ranked = [s for s in suggestions if s.verdict != "INCOMPATIBLE"]
     ranked.sort(key=_score, reverse=True)
     return ranked
+
 
 class SubstituteSuggester:
     """
@@ -187,8 +187,8 @@ Return ONLY the JSON. No preamble, no markdown fences."""
 
     def __init__(self, db, model: Optional[str] = None):
         settings = get_settings()
-        self.db     = db
-        self.model  = model or settings.claude_model
+        self.db = db
+        self.model = model or settings.claude_model
         self.client = Anthropic(api_key=settings.anthropic_api_key)
 
     def _fetch_part(self, part_id: str) -> Optional[Dict]:

@@ -15,22 +15,22 @@ Endpoints
       Cache hit rate and vector store counts.
 """
 
-from __future__ import annotations
+from __future__ import annotations  # noqa: E402
 
-from typing import List, Optional
+from typing import List, Optional  # noqa: E402
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query  # noqa: E402
 
-from src.api.dependencies import get_db, verify_token
-from src.api.cache import get_stats as cache_stats
-from src.graph.neo4j_client import Neo4jClient
+from src.api.dependencies import get_db, verify_token  # noqa: E402
+from src.api.cache import get_stats as cache_stats  # noqa: E402
+from src.graph.neo4j_client import Neo4jClient  # noqa: E402
 
 router = APIRouter(prefix="/search", tags=["Search"])
 
 
 # ── Response schemas (inline — simple enough not to need schemas.py) ──────────
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # noqa: E402
 
 
 class SearchResultItem(BaseModel):
@@ -65,10 +65,10 @@ class StatsResponse(BaseModel):
 @router.get("", response_model=SearchResponse,
             dependencies=[Depends(verify_token)])
 def semantic_search(
-    q:         str           = Query(..., min_length=2, description="Search query"),
+    q:         str = Query(..., min_length=2, description="Search query"),
     type:      Optional[str] = Query(None, description="part | supplier | bom (omit for all)"),
-    limit:     int           = Query(default=10, ge=1, le=50),
-    min_score: float         = Query(default=0.3, ge=0.0, le=1.0),
+    limit:     int = Query(default=10, ge=1, le=50),
+    min_score: float = Query(default=0.3, ge=0.0, le=1.0),
 ):
     """
     Semantic similarity search over parts, suppliers, and BOMs.
@@ -85,7 +85,7 @@ def semantic_search(
     from src.ai.grounded import rerank_search_results
 
     entity_type = type if type in ("part", "supplier", "bom") else None
-    query_vec   = embed(q)
+    query_vec = embed(q)
     raw_results = search(query_vec, entity_type=entity_type,
                          limit=limit * 2,   # fetch extra for reranking headroom
                          min_score=min_score)
@@ -126,7 +126,7 @@ def reindex(db: Neo4jClient = Depends(get_db)):
     from src.search.vector_store import reindex_all
 
     counts = reindex_all(db)
-    total  = sum(counts.values())
+    total = sum(counts.values())
     return ReindexResponse(
         parts=counts["parts"],
         suppliers=counts["suppliers"],

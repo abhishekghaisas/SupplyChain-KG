@@ -134,7 +134,6 @@ class SupplierQualificationResponse(BaseModel):
     result: RuleResultResponse
 
 
-
 # ─── BOM ──────────────────────────────────────────────────────────────────────
 
 class ComponentCreate(BaseModel):
@@ -209,9 +208,11 @@ class BOMUsageResponse(BaseModel):
 
 # ─── Extraction ───────────────────────────────────────────────────────────────
 
+
 class ExtractionRequest(BaseModel):
     text: str = Field(..., min_length=10, description="Document text to extract entities from")
-    document_type: str = Field(default="unknown", description="catalog | bom | price_list | purchase_order")
+    document_type: str = Field(
+        default="unknown", description="catalog | bom | price_list | purchase_order")
     source: str = Field(default="api_request")
     persist: bool = Field(
         default=False,
@@ -260,10 +261,12 @@ class HealthResponse(BaseModel):
 
 # ─── BOM Versioning ───────────────────────────────────────────────────────────
 
+
 class BOMCloneRequest(BaseModel):
     new_bom_id:      str = Field(..., description="ID for the new BOM")
     new_version:     str = Field(..., description="Version string, e.g. '2.0'")
-    new_name:        Optional[str] = Field(default=None, description="Override name; defaults to source name")
+    new_name:        Optional[str] = Field(
+        default=None, description="Override name; defaults to source name")
     new_description: Optional[str] = Field(default=None)
     new_status:      str = Field(default="DRAFT")
     cloned_by:       Optional[str] = Field(default=None, description="Actor ID")
@@ -320,8 +323,8 @@ class BOMTransitionResponse(BaseModel):
     to_status:     str
     actor:         str
     rules_passed:  Optional[bool] = None
-    rules_summary: Optional[str]  = None
-    approval:      Optional[str]  = None   # approver_id if approval was present
+    rules_summary: Optional[str] = None
+    approval:      Optional[str] = None   # approver_id if approval was present
 
 
 class BOMTransitionHistoryResponse(BaseModel):

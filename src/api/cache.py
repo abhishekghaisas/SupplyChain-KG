@@ -47,7 +47,7 @@ _TTL: list[tuple[str, int]] = [
     (r"^/suppliers", 300),
     (r"^/boms",       60),
     (r"^/reasoning", 600),
-    (r"^/disruption",600),
+    (r"^/disruption", 600),
     (r"^/search",    120),
 ]
 _DEFAULT_TTL = 180
@@ -93,7 +93,7 @@ def _get_redis():
     s = get_settings()
     host = s.redis_host or "localhost"
     port = s.redis_port or 6379
-    db   = (s.redis_db or 0) + 2   # db+2 — separate from rate-limit (db) and tokens (db+1)
+    db = (s.redis_db or 0) + 2   # db+2 — separate from rate-limit (db) and tokens (db+1)
     return redis_lib.Redis(host=host, port=port, db=db, decode_responses=True,
                            socket_connect_timeout=1)
 
@@ -140,9 +140,9 @@ def get_stats() -> dict:
     """Return cache hit/miss counts and hit rate."""
     try:
         r = _get_redis()
-        hits   = int(r.hget(_METRICS_KEY, "hits")   or 0)
+        hits = int(r.hget(_METRICS_KEY, "hits") or 0)
         misses = int(r.hget(_METRICS_KEY, "misses") or 0)
-        total  = hits + misses
+        total = hits + misses
         return {
             "hits":     hits,
             "misses":   misses,
@@ -165,7 +165,7 @@ class CacheMiddleware(BaseHTTPMiddleware):
     """
 
     async def dispatch(self, request: Request, call_next):
-        path  = request.url.path
+        path = request.url.path
         method = request.method
 
         # ── Write: invalidate cache then pass through ─────────────────────────
@@ -184,7 +184,7 @@ class CacheMiddleware(BaseHTTPMiddleware):
 
         # ── Cache lookup ──────────────────────────────────────────────────────
         query = str(request.query_params)
-        key   = _cache_key(method, path, query)
+        key = _cache_key(method, path, query)
         cached = get_cached(key)
 
         if cached:

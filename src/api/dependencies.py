@@ -8,7 +8,7 @@ then pass it as:  Authorization: Bearer <token>
 
 from typing import Generator
 
-from fastapi import Depends, HTTPException, Security, status
+from fastapi import HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from src.api.auth import decode_access_token

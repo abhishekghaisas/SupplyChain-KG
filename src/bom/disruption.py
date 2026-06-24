@@ -71,11 +71,11 @@ DEFAULT_BOM_STATUSES = ("RELEASED",)
 # ── Enums / data classes ──────────────────────────────────────────────────────
 
 class RecommendedAction(str, Enum):
-    USE_SUBSTITUTE     = "USE_SUBSTITUTE"
+    USE_SUBSTITUTE = "USE_SUBSTITUTE"
     EXPEDITE_ALTERNATE = "EXPEDITE_ALTERNATE"
-    DUAL_SOURCE        = "DUAL_SOURCE"
-    ESCALATE           = "ESCALATE"
-    MONITOR            = "MONITOR"
+    DUAL_SOURCE = "DUAL_SOURCE"
+    ESCALATE = "ESCALATE"
+    MONITOR = "MONITOR"
 
 
 @dataclass
@@ -147,7 +147,8 @@ class DisruptedPart:
 
         # Deduplicate while preserving order
         seen: set = set()
-        return [a for a in actions if not (a in seen or seen.add(a))]  # type: ignore[func-returns-value]
+        # type: ignore[func-returns-value]
+        return [a for a in actions if not (a in seen or seen.add(a))]
 
 
 @dataclass
@@ -508,7 +509,7 @@ class DisruptionAnalyzer:
                 continue
 
             severity = self._compute_severity(disrupted_parts)
-            actions  = self._aggregate_actions(disrupted_parts)
+            actions = self._aggregate_actions(disrupted_parts)
 
             affected.append(AffectedBOM(
                 bom_id=bom_data["bom_id"],
@@ -530,10 +531,10 @@ class DisruptionAnalyzer:
     ) -> List[DisruptedPart]:
         parts = []
         for row in bom_part_rows:
-            pid  = row["part_id"]
+            pid = row["part_id"]
             meta = part_meta.get(pid, {})
 
-            alt_count   = self._fetch_alternate_supplier_count(pid, disrupted_supplier_id)
+            alt_count = self._fetch_alternate_supplier_count(pid, disrupted_supplier_id)
             substitutes = self._fetch_substitutes(pid)
 
             parts.append(DisruptedPart(

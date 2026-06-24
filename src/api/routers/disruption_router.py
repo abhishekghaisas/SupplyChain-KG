@@ -18,7 +18,7 @@ Query parameters (both endpoints):
 
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
@@ -191,9 +191,9 @@ def ai_narrate_disruption(
     """
     from src.ai.grounded import GroundedClient
 
-    disrupted_id   = body.get("disrupted_id")
+    disrupted_id = body.get("disrupted_id")
     disrupted_type = body.get("disrupted_type")
-    report         = body.get("report")
+    report = body.get("report")
 
     if not disrupted_id or not disrupted_type or not report:
         raise HTTPException(
@@ -202,7 +202,7 @@ def ai_narrate_disruption(
         )
 
     try:
-        client   = GroundedClient(db)
+        client = GroundedClient(db)
         response = client.narrate_disruption(disrupted_id, disrupted_type, report)
         return response.to_dict()
     except Exception as exc:

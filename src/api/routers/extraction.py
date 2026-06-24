@@ -25,6 +25,7 @@ from src.api.schemas import (
 from src.graph.neo4j_client import Neo4jClient
 from src.ingestion.entity_extractor import ClaudeEntityExtractor
 
+
 def _stable_supplier_id(name: str) -> str:
     """
     Derive a stable, canonical supplier ID from a name.

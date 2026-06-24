@@ -19,7 +19,6 @@ BOMVersionManager.diff(bom_id_a, bom_id_b)
 
 from __future__ import annotations
 
-import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -421,7 +420,7 @@ class BOMVersionManager:
         keys_a = set(snap_a)
         keys_b = set(snap_b)
 
-        added   = [snap_b[k] for k in sorted(keys_b - keys_a)]
+        added = [snap_b[k] for k in sorted(keys_b - keys_a)]
         removed = [snap_a[k] for k in sorted(keys_a - keys_b)]
 
         modified: List[ComponentChange] = []

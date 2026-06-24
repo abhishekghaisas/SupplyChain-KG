@@ -2,20 +2,20 @@
 Parts router — CRUD and supplier/compatibility queries for parts.
 """
 
-import json
-from typing import List, Optional
+import json  # noqa: E402
+from typing import List, Optional  # noqa: E402
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status  # noqa: E402
 
-from src.api.dependencies import get_db, verify_token
-from src.api.schemas import BOMUsageResponse
-from src.api.schemas import (
+from src.api.dependencies import get_db, verify_token  # noqa: E402
+from src.api.schemas import BOMUsageResponse  # noqa: E402
+from src.api.schemas import (  # noqa: E402
     CompatibilityResponse,
     PartCreate,
     PartResponse,
     SupplierForPartResponse,
 )
-from src.graph.neo4j_client import Neo4jClient
+from src.graph.neo4j_client import Neo4jClient  # noqa: E402
 
 router = APIRouter(prefix="/parts", tags=["Parts"])
 
@@ -81,7 +81,8 @@ def get_part(part_id: str, db: Neo4jClient = Depends(get_db)):
             dependencies=[Depends(verify_token)])
 def get_part_suppliers(
     part_id: str,
-    as_of: Optional[str] = Query(None, description="ISO date for historical query, e.g. 2023-06-01"),
+    as_of: Optional[str] = Query(
+        None, description="ISO date for historical query, e.g. 2023-06-01"),
     db: Neo4jClient = Depends(get_db),
 ):
     """Return current (or historical) suppliers for a part."""
@@ -159,7 +160,9 @@ def _assert_part_exists(part_id: str, db: Neo4jClient) -> None:
 
 # ── AI-powered substitute suggestion ──────────────────────────────────────────
 
-from pydantic import BaseModel as _BaseModel
+
+from pydantic import BaseModel as _BaseModel  # noqa: E402
+
 
 class SubstitutePersistRequest(_BaseModel):
     suggestions: list

@@ -51,7 +51,7 @@ class PartCompatibilityRule(BaseRule):
         """
         import json
 
-        original_id   = original_part.get('id')
+        original_id = original_part.get('id')
         substitute_id = substitute_part.get('id')
 
         self.facts_used = [
@@ -103,7 +103,7 @@ class PartCompatibilityRule(BaseRule):
 
         # ── Step 2: spec-based comparison (fallback / no db) ─────────────────
         try:
-            original_specs   = json.loads(original_part.get('specifications_json', '{}'))
+            original_specs = json.loads(original_part.get('specifications_json', '{}'))
             substitute_specs = json.loads(substitute_part.get('specifications_json', '{}'))
         except json.JSONDecodeError:
             return self._create_result(
@@ -143,7 +143,7 @@ class PartCompatibilityRule(BaseRule):
             )
 
         # Check certifications — substitute must cover all original certs
-        original_certs  = set(original_specs.get('certifications', []))
+        original_certs = set(original_specs.get('certifications', []))
         substitute_certs = set(substitute_specs.get('certifications', []))
 
         missing_certs = original_certs - substitute_certs
@@ -170,14 +170,14 @@ class PartCompatibilityRule(BaseRule):
 
 class LeadTimeFeasibilityRule(BaseRule):
     """Check if supplier can meet required delivery date."""
-    
+
     def __init__(self):
         super().__init__(
             name="LeadTimeFeasibilityRule",
             rule_type=RuleType.CONSTRAINT,
             severity=RuleSeverity.ERROR
         )
-    
+
     def check(
         self,
         supplier_lead_time_days: int,
@@ -186,27 +186,27 @@ class LeadTimeFeasibilityRule(BaseRule):
     ) -> RuleResult:
         """
         Check if supplier can deliver by required date.
-        
+
         Args:
             supplier_lead_time_days: Supplier's typical lead time
             required_date: When parts are needed
             order_date: When order will be placed (default: today)
-            
+
         Returns:
             RuleResult
         """
         if order_date is None:
             order_date = date.today()
-        
+
         self.facts_used = [
             f"lead_time:{supplier_lead_time_days}",
             f"required_date:{required_date}",
             f"order_date:{order_date}"
         ]
-        
+
         earliest_delivery = order_date + timedelta(days=supplier_lead_time_days)
         days_difference = (required_date - earliest_delivery).days
-        
+
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
@@ -218,7 +218,7 @@ class LeadTimeFeasibilityRule(BaseRule):
                 },
                 confidence=1.0
             )
-        
+
         # Calculate confidence based on buffer
         buffer_days = days_difference
         if buffer_days >= 7:
@@ -227,7 +227,7 @@ class LeadTimeFeasibilityRule(BaseRule):
             confidence = 0.85
         else:
             confidence = 0.75
-        
+
         return self._create_result(
             passed=True,
             reason=f"Can deliver on time with {buffer_days} days buffer",
@@ -242,14 +242,14 @@ class LeadTimeFeasibilityRule(BaseRule):
 
 class SupplierQualificationRule(BaseRule):
     """Check if supplier meets qualification requirements."""
-    
+
     def __init__(self):
         super().__init__(
             name="SupplierQualificationRule",
             rule_type=RuleType.VALIDATION,
             severity=RuleSeverity.ERROR
         )
-    
+
     def check(
         self,
         supplier: Dict[str, Any],
@@ -258,19 +258,19 @@ class SupplierQualificationRule(BaseRule):
     ) -> RuleResult:
         """
         Check if supplier is qualified.
-        
+
         Args:
             supplier: Supplier data
             required_certifications: List of required certs
             min_rating: Minimum acceptable rating
-            
+
         Returns:
             RuleResult
         """
         self.facts_used = [f"supplier:{supplier.get('id')}"]
-        
+
         issues = []
-        
+
         # Check status
         if supplier.get('status') != 'ACTIVE':
             return self._create_result(
@@ -280,19 +280,19 @@ class SupplierQualificationRule(BaseRule):
                 severity=RuleSeverity.CRITICAL,
                 confidence=1.0
             )
-        
+
         # Check certifications
         if required_certifications:
             supplier_certs = set(supplier.get('certifications', []))
             missing = set(required_certifications) - supplier_certs
             if missing:
                 issues.append(f"Missing certifications: {', '.join(missing)}")
-        
+
         # Check rating
         rating = supplier.get('rating', 0.0)
         if rating < min_rating:
             issues.append(f"Rating {rating} below minimum {min_rating}")
-        
+
         if issues:
             return self._create_result(
                 passed=False,
@@ -300,7 +300,7 @@ class SupplierQualificationRule(BaseRule):
                 details={"issues": issues},
                 confidence=1.0
             )
-        
+
         return self._create_result(
             passed=True,
             reason="Supplier meets all qualification requirements",
@@ -315,14 +315,14 @@ class SupplierQualificationRule(BaseRule):
 
 class PriceReasonablenessRule(BaseRule):
     """Check if price is reasonable compared to historical data."""
-    
+
     def __init__(self):
         super().__init__(
             name="PriceReasonablenessRule",
             rule_type=RuleType.VALIDATION,
             severity=RuleSeverity.WARNING
         )
-    
+
     def check(
         self,
         current_price: float,
@@ -331,12 +331,12 @@ class PriceReasonablenessRule(BaseRule):
     ) -> RuleResult:
         """
         Check if price is within reasonable range.
-        
+
         Args:
             current_price: Price being evaluated
             historical_prices: List of historical prices
             max_deviation_percent: Maximum acceptable deviation
-            
+
         Returns:
             RuleResult
         """
@@ -347,10 +347,10 @@ class PriceReasonablenessRule(BaseRule):
                 details={"note": "First price for this item"},
                 confidence=0.5
             )
-        
+
         avg_price = sum(historical_prices) / len(historical_prices)
         deviation_percent = abs((current_price - avg_price) / avg_price) * 100
-        
+
         if deviation_percent > max_deviation_percent:
             return self._create_result(
                 passed=False,
@@ -362,7 +362,7 @@ class PriceReasonablenessRule(BaseRule):
                 },
                 confidence=0.9
             )
-        
+
         return self._create_result(
             passed=True,
             reason=f"Price within acceptable range (deviation: {deviation_percent:.1f}%)",

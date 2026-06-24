@@ -2,7 +2,7 @@
 BOM (Bill of Materials) router — full CRUD, versioning, approval workflow, AI review.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse

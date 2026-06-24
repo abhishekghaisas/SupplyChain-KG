@@ -18,7 +18,6 @@ from tenacity import retry, stop_after_attempt, wait_exponential
 from src.config import get_settings
 
 
-
 # ── Unit of measure normalisation ─────────────────────────────────────────────
 
 _UOM_MAP = {
@@ -32,15 +31,14 @@ _UOM_MAP = {
     "lot": "LOT", "pair": "PR", "pairs": "PR",
 }
 
+
 def _normalise_uom(raw: str) -> str:
     if not raw:
         return "EA"
     return _UOM_MAP.get(raw.lower().strip(), raw.upper().strip())
 
 
-
 # ── Category normalisation ────────────────────────────────────────────────────
-
 CANONICAL_CATEGORIES = [
     "electronic", "electrical", "electromechanical",
     "mechanical", "hydraulic", "pneumatic",
@@ -133,10 +131,12 @@ class ExtractedPart(BaseModel):
     """Structured part information."""
     part_id: str = Field(description="Part number or ID (e.g., P-12345)")
     name: str = Field(description="Part name or description")
-    category: Optional[str] = Field(default=None, description="Category: electronic, mechanical, electrical, etc.")
-    specifications: Dict[str, Any] = Field(default_factory=dict, description="Technical specifications")
+    category: Optional[str] = Field(
+        default=None, description="Category: electronic, mechanical, electrical, etc.")
+    specifications: Dict[str, Any] = Field(
+        default_factory=dict, description="Technical specifications")
     unit_of_measure: Optional[str] = Field(default="EA", description="Unit of measure")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -157,9 +157,10 @@ class ExtractedSupplier(BaseModel):
     supplier_id: Optional[str] = Field(default=None, description="Supplier ID if mentioned")
     name: str = Field(description="Supplier company name")
     location: Optional[str] = Field(default=None, description="Country or region")
-    certifications: List[str] = Field(default_factory=list, description="Quality certifications (ISO9001, etc.)")
+    certifications: List[str] = Field(
+        default_factory=list, description="Quality certifications (ISO9001, etc.)")
     contact_info: Dict[str, str] = Field(default_factory=dict, description="Contact information")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -181,7 +182,7 @@ class ExtractedSupplyRelationship(BaseModel):
     price: Optional[float] = Field(default=None, description="Unit price")
     currency: Optional[str] = Field(default="USD", description="Currency code")
     min_order_quantity: Optional[int] = Field(default=None, description="Minimum order quantity")
-    
+
     class Config:
         json_schema_extra = {
             "example": {
@@ -199,17 +200,19 @@ class SupplyChainDocument(BaseModel):
     parts: List[ExtractedPart] = Field(default_factory=list)
     suppliers: List[ExtractedSupplier] = Field(default_factory=list)
     relationships: List[ExtractedSupplyRelationship] = Field(default_factory=list)
-    document_type: str = Field(description="Type of document: catalog, bom, price_list, purchase_order, etc.")
-    confidence_notes: Optional[str] = Field(default=None, description="Any notes about extraction confidence")
+    document_type: str = Field(
+        description="Type of document: catalog, bom, price_list, purchase_order, etc.")
+    confidence_notes: Optional[str] = Field(
+        default=None, description="Any notes about extraction confidence")
 
 
 class ClaudeEntityExtractor:
     """Extract structured entities from supply chain documents using Claude."""
-    
+
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
         """
         Initialize Claude entity extractor.
-        
+
         Args:
             api_key: Anthropic API key (uses config if not provided)
             model: Claude model to use (uses config if not provided)
@@ -219,10 +222,10 @@ class ClaudeEntityExtractor:
         self.model = model or settings.claude_model
         self.temperature = settings.llm_temperature
         self.max_tokens = settings.llm_max_tokens
-        
+
         # Initialize Anthropic client
         self.client = Anthropic(api_key=self.api_key)
-        
+
         # Initialize LangChain client for structured output
         self.llm = ChatAnthropic(
             anthropic_api_key=self.api_key,
@@ -230,9 +233,9 @@ class ClaudeEntityExtractor:
             temperature=self.temperature,
             max_tokens=self.max_tokens
         )
-        
+
         logger.info(f"Initialized ClaudeEntityExtractor with model: {self.model}")
-    
+
     @retry(
         stop=stop_after_attempt(3),
         wait=wait_exponential(multiplier=1, min=2, max=10)
@@ -245,20 +248,20 @@ class ClaudeEntityExtractor:
     ) -> ExtractionResult:
         """
         Extract entities from text using Claude with structured output.
-        
+
         Args:
             text: Document text to extract from
             document_type: Type of document (catalog, bom, price_list, etc.)
             source: Source document identifier
-            
+
         Returns:
             ExtractionResult with extracted entities
         """
         logger.info(f"Extracting entities from {document_type} document")
-        
+
         # Use Pydantic parser for structured output
         parser = PydanticOutputParser(pydantic_object=SupplyChainDocument)
-        
+
         # Create prompt
         prompt = ChatPromptTemplate.from_messages([
             ("system", """You are an expert at extracting structured information from supply chain documents.
@@ -278,10 +281,10 @@ Document Text:
 
 Extract all supply chain entities from this document.""")
         ])
-        
+
         # Build chain
         chain = prompt | self.llm | parser
-        
+
         try:
             # Execute extraction
             result: SupplyChainDocument = chain.invoke({
@@ -289,34 +292,34 @@ Extract all supply chain entities from this document.""")
                 "document_type": document_type,
                 "format_instructions": parser.get_format_instructions()
             })
-            
+
             # Calculate confidence (simple heuristic - can be improved)
             confidence = self._calculate_confidence(result, text)
-            
+
             # Convert to dict format
             entities = {
                 "parts": [part.model_dump() for part in result.parts],
                 "suppliers": [supplier.model_dump() for supplier in result.suppliers],
                 "relationships": [rel.model_dump() for rel in result.relationships]
             }
-            
+
             logger.success(
                 f"Extracted {len(result.parts)} parts, "
                 f"{len(result.suppliers)} suppliers, "
                 f"{len(result.relationships)} relationships"
             )
-            
+
             return ExtractionResult(
                 entities=[entities],
                 confidence=confidence,
                 source=source,
                 extraction_method=f"claude_{self.model}"
             )
-            
+
         except Exception as e:
             logger.error(f"Extraction failed: {e}")
             raise
-    
+
     def extract_parts_only(
         self,
         text: str,
@@ -324,16 +327,16 @@ Extract all supply chain entities from this document.""")
     ) -> List[ExtractedPart]:
         """
         Extract only parts from text.
-        
+
         Args:
             text: Document text
             source: Source identifier
-            
+
         Returns:
             List of extracted parts
         """
         parser = PydanticOutputParser(pydantic_object=ExtractedPart)
-        
+
         prompt = ChatPromptTemplate.from_messages([
             ("system", """Extract part information from this text.
 Focus on part numbers, names, categories, and specifications.
@@ -341,9 +344,9 @@ Focus on part numbers, names, categories, and specifications.
 {format_instructions}"""),
             ("human", "{text}")
         ])
-        
+
         chain = prompt | self.llm | parser
-        
+
         try:
             # For multiple parts, we'll need to chunk or use a different approach
             # This is simplified - production would handle multiple parts better
@@ -351,13 +354,13 @@ Focus on part numbers, names, categories, and specifications.
                 "text": text,
                 "format_instructions": parser.get_format_instructions()
             })
-            
+
             return [result] if isinstance(result, ExtractedPart) else result
-            
+
         except Exception as e:
             logger.error(f"Part extraction failed: {e}")
             return []
-    
+
     def extract_with_direct_api(
         self,
         text: str,
@@ -562,9 +565,12 @@ Rules:
 
             # Calculate confidence
             confidence = 0.85
-            if entities.get("parts"):        confidence += 0.05
-            if entities.get("suppliers"):    confidence += 0.05
-            if entities.get("relationships"): confidence += 0.05
+            if entities.get("parts"):
+                confidence += 0.05
+            if entities.get("suppliers"):
+                confidence += 0.05
+            if entities.get("relationships"):
+                confidence += 0.05
 
             logger.success(
                 f"Extracted {len(entities['parts'])} parts, "
@@ -592,7 +598,7 @@ Rules:
         except Exception as e:
             logger.error(f"Direct API extraction failed: {e}")
             raise
-    
+
     def _calculate_confidence(
         self,
         result: SupplyChainDocument,
@@ -600,41 +606,41 @@ Rules:
     ) -> float:
         """
         Calculate extraction confidence score.
-        
+
         Args:
             result: Extraction result
             original_text: Original document text
-            
+
         Returns:
             Confidence score (0.0-1.0)
         """
         confidence = 0.5  # Base confidence
-        
+
         # More entities = higher confidence (up to a point)
         entity_count = len(result.parts) + len(result.suppliers) + len(result.relationships)
         confidence += min(entity_count * 0.05, 0.3)
-        
+
         # Complete fields = higher confidence
         for part in result.parts:
             if part.specifications:
                 confidence += 0.02
             if part.category:
                 confidence += 0.01
-        
+
         for supplier in result.suppliers:
             if supplier.certifications:
                 confidence += 0.02
             if supplier.location:
                 confidence += 0.01
-        
+
         for rel in result.relationships:
             if rel.lead_time_days:
                 confidence += 0.01
             if rel.price:
                 confidence += 0.01
-        
+
         return min(confidence, 1.0)
-    
+
     def batch_extract(
         self,
         texts: List[str],
@@ -642,17 +648,17 @@ Rules:
     ) -> List[ExtractionResult]:
         """
         Extract entities from multiple documents.
-        
+
         Args:
             texts: List of document texts
             document_types: List of document types (optional)
-            
+
         Returns:
             List of extraction results
         """
         if document_types is None:
             document_types = ["unknown"] * len(texts)
-        
+
         results = []
         for i, (text, doc_type) in enumerate(zip(texts, document_types)):
             logger.info(f"Processing document {i+1}/{len(texts)}")
@@ -662,7 +668,7 @@ Rules:
             except Exception as e:
                 logger.error(f"Failed to extract from document {i+1}: {e}")
                 continue
-        
+
         return results
 
 
@@ -674,12 +680,12 @@ def extract_entities_from_text(
 ) -> ExtractionResult:
     """
     Convenience function to extract entities using Claude.
-    
+
     Args:
         text: Document text
         document_type: Type of document
         source: Source identifier
-        
+
     Returns:
         ExtractionResult
     """

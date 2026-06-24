@@ -33,9 +33,9 @@ from src.config import get_settings
 # ── Limit strings ─────────────────────────────────────────────────────────────
 # Import these in router files to keep limits DRY.
 
-AUTH_LIMIT       = "10/minute"
+AUTH_LIMIT = "10/minute"
 EXTRACTION_LIMIT = "20/hour"
-DEFAULT_LIMIT    = "120/minute"
+DEFAULT_LIMIT = "120/minute"
 
 
 # ── Key function ──────────────────────────────────────────────────────────────
@@ -76,7 +76,7 @@ def _make_storage_uri() -> str:
     settings = get_settings()
     if settings.redis_host:
         port = settings.redis_port or 6379
-        db   = settings.redis_db   or 0
+        db = settings.redis_db or 0
         return f"redis://{settings.redis_host}:{port}/{db}"
     return "memory://"
 

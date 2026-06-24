@@ -42,7 +42,7 @@ Setup
 
 import uuid
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import bcrypt
 from fastapi import APIRouter, Body, Form, HTTPException, Request, Response, status
@@ -68,7 +68,6 @@ class TokenResponse(BaseModel):
 
 class RevokeRequest(BaseModel):
     refresh_token: str
-
 
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
@@ -229,7 +228,7 @@ def token(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
-    access_token, expires_in     = create_access_token({"sub": client_id})
+    access_token, expires_in = create_access_token({"sub": client_id})
     refresh_token, _, refresh_exp = create_refresh_token(client_id)
 
     logger.info(f"Issued token pair for client {client_id!r}")
@@ -267,7 +266,7 @@ def refresh(
 
     # 1. Verify JWT signature and expiry
     payload = _decode_refresh_token(refresh_token)
-    jti       = payload.get("jti")
+    jti = payload.get("jti")
     client_id = payload.get("sub")
 
     if not jti or not client_id:
@@ -304,8 +303,8 @@ def refresh(
         )
 
     # 3. Issue a new token pair
-    new_access,  expires_in      = create_access_token({"sub": client_id})
-    new_refresh, _, refresh_exp  = create_refresh_token(client_id)
+    new_access,  expires_in = create_access_token({"sub": client_id})
+    new_refresh, _, refresh_exp = create_refresh_token(client_id)
 
     logger.info(f"Refreshed token pair for client {client_id!r}")
     return TokenResponse(
