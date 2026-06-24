@@ -58,7 +58,7 @@ def patch_settings():
     """Replace get_settings() everywhere with the test settings."""
     with patch("src.config.get_settings", return_value=_TestSettings()), \
          patch("src.api.auth.get_settings", return_value=_TestSettings()), \
-         patch("src.api.dependencies.get_settings", return_value=_TestSettings()):
+         patch("src.config.get_settings", return_value=_TestSettings()):
         yield
 
 
