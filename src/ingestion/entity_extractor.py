@@ -307,6 +307,7 @@ class ClaudeEntityExtractor:
         """Lazy-initialise LangChain client to avoid import errors at module load."""
         if self._llm is None:
             from langchain_anthropic import ChatAnthropic  # noqa: F401
+
             self._llm = ChatAnthropic(
                 anthropic_api_key=self.api_key,
                 model=self.model,
@@ -319,10 +320,12 @@ class ClaudeEntityExtractor:
         """Lazy import of langchain utilities."""
         from langchain.prompts import ChatPromptTemplate  # noqa: F401
         from langchain.output_parsers import PydanticOutputParser  # noqa: F401
+
         return ChatPromptTemplate, PydanticOutputParser
 
-    def extract_from_text(self, text: str, document_type: str = "unknown",
-                          source: str = "unknown") -> ExtractionResult:
+    def extract_from_text(
+        self, text: str, document_type: str = "unknown", source: str = "unknown"
+    ) -> ExtractionResult:
         """
         Extract entities from text using Claude with structured output.
 
