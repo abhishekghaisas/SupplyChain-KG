@@ -10,7 +10,7 @@ from enum import Enum
 from anthropic import Anthropic
 from pydantic import BaseModel, Field
 from loguru import logger
-from tenacity import retry, stop_after_attempt, wait_exponential
+
 
 from src.config import get_settings
 
@@ -306,7 +306,7 @@ class ClaudeEntityExtractor:
     def _get_llm(self):
         """Lazy-initialise LangChain client to avoid import errors at module load."""
         if self._llm is None:
-            from langchain_anthropic import ChatAnthropic
+            from langchain_anthropic import ChatAnthropic  # noqa: F401
             self._llm = ChatAnthropic(
                 anthropic_api_key=self.api_key,
                 model=self.model,
@@ -315,22 +315,14 @@ class ClaudeEntityExtractor:
             )
         return self._llm
 
-    def _get_llm(self):
-        """Lazy-initialise LangChain client to avoid import errors at module load."""
-        if self._llm is None:
-            from langchain_anthropic import ChatAnthropic
-            self._llm = ChatAnthropic(
-                anthropic_api_key=self.api_key,
-                model=self.model,
-                temperature=self.temperature,
-                max_tokens=self.max_tokens,
-            )
-        return self._llm
+    def _get_langchain_imports(self):
+        """Lazy import of langchain utilities."""
+        from langchain.prompts import ChatPromptTemplate  # noqa: F401
+        from langchain.output_parsers import PydanticOutputParser  # noqa: F401
+        return ChatPromptTemplate, PydanticOutputParser
 
-    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
-    def extract_from_text(
-        self, text: str, document_type: str = "unknown", source: str = "unknown"
-    ) -> ExtractionResult:
+    def extract_from_text(self, text: str, document_type: str = "unknown",
+                          source: str = "unknown") -> ExtractionResult:
         """
         Extract entities from text using Claude with structured output.
 
@@ -345,6 +337,7 @@ class ClaudeEntityExtractor:
         logger.info(f"Extracting entities from {document_type} document")
 
         # Use Pydantic parser for structured output
+        ChatPromptTemplate, PydanticOutputParser = self._get_langchain_imports()
         parser = PydanticOutputParser(pydantic_object=SupplyChainDocument)
 
         # Create prompt
@@ -426,6 +419,7 @@ Extract all supply chain entities from this document.""",
         Returns:
             List of extracted parts
         """
+        ChatPromptTemplate, PydanticOutputParser = self._get_langchain_imports()
         parser = PydanticOutputParser(pydantic_object=ExtractedPart)
 
         prompt = ChatPromptTemplate.from_messages(
