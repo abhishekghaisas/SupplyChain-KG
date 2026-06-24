@@ -31,14 +31,14 @@ def verify_token(
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid Authorization header. "
-                   "Use: Authorization: Bearer <token>",
+            detail="Missing or invalid Authorization header. " "Use: Authorization: Bearer <token>",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return decode_access_token(credentials.credentials)
 
 
 # ── Database ──────────────────────────────────────────────────────────────────
+
 
 def get_db() -> Generator[Neo4jClient, None, None]:
     """Yield a connected Neo4jClient and close it when the request finishes."""

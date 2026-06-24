@@ -30,8 +30,12 @@ def list_suppliers(db: Neo4jClient = Depends(get_db)):
     return db.execute_query(query)
 
 
-@router.post("", response_model=SupplierResponse, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(verify_token)])
+@router.post(
+    "",
+    response_model=SupplierResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_token)],
+)
 def create_supplier(body: SupplierCreate, db: Neo4jClient = Depends(get_db)):
     """Create a new Supplier node."""
     db.create_supplier(
@@ -48,15 +52,17 @@ def create_supplier(body: SupplierCreate, db: Neo4jClient = Depends(get_db)):
     return _fetch_supplier(body.id, db)
 
 
-@router.get("/{supplier_id}", response_model=SupplierResponse,
-            dependencies=[Depends(verify_token)])
+@router.get("/{supplier_id}", response_model=SupplierResponse, dependencies=[Depends(verify_token)])
 def get_supplier(supplier_id: str, db: Neo4jClient = Depends(get_db)):
     """Return a single supplier by ID."""
     return _fetch_supplier(supplier_id, db)
 
 
-@router.get("/{supplier_id}/disruption", response_model=DisruptionAssessmentResponse,
-            dependencies=[Depends(verify_token)])
+@router.get(
+    "/{supplier_id}/disruption",
+    response_model=DisruptionAssessmentResponse,
+    dependencies=[Depends(verify_token)],
+)
 def assess_disruption(supplier_id: str, db: Neo4jClient = Depends(get_db)):
     """
     Return an impact assessment if this supplier were disrupted —
@@ -67,6 +73,7 @@ def assess_disruption(supplier_id: str, db: Neo4jClient = Depends(get_db)):
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _fetch_supplier(supplier_id: str, db: Neo4jClient) -> dict:
     query = """
@@ -82,11 +89,10 @@ def _fetch_supplier(supplier_id: str, db: Neo4jClient) -> dict:
 
 
 def _assert_supplier_exists(supplier_id: str, db: Neo4jClient) -> None:
-    rows = db.execute_query(
-        "MATCH (s:Supplier {id: $id}) RETURN s.id", {"id": supplier_id}
-    )
+    rows = db.execute_query("MATCH (s:Supplier {id: $id}) RETURN s.id", {"id": supplier_id})
     if not rows:
         raise HTTPException(status_code=404, detail=f"Supplier {supplier_id!r} not found")
+
 
 # ── AI-powered qualification ───────────────────────────────────────────────────
 
@@ -104,9 +110,7 @@ def ai_qualify_supplier(supplier_id: str, db: Neo4jClient = Depends(get_db)):
     """
     from src.ai.grounded import GroundedClient
 
-    rows = db.execute_query(
-        "MATCH (s:Supplier {id: $id}) RETURN s.id", {"id": supplier_id}
-    )
+    rows = db.execute_query("MATCH (s:Supplier {id: $id}) RETURN s.id", {"id": supplier_id})
     if not rows:
         raise HTTPException(status_code=404, detail=f"Supplier {supplier_id!r} not found")
 

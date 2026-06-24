@@ -21,14 +21,42 @@ from src.config import get_settings
 # ── Unit of measure normalisation ─────────────────────────────────────────────
 
 _UOM_MAP = {
-    "each": "EA", "piece": "EA", "pieces": "EA", "pc": "EA", "pcs": "EA",
-    "unit": "EA", "units": "EA", "ea": "EA", "item": "EA", "items": "EA",
-    "1": "EA", "meter": "M", "meters": "M", "metre": "M", "metres": "M",
-    "foot": "FT", "feet": "FT", "ft": "FT", "inch": "IN", "inches": "IN",
-    "millimeter": "MM", "mm": "MM", "kilogram": "KG", "kilograms": "KG",
-    "kg": "KG", "gram": "G", "grams": "G", "pound": "LB", "lbs": "LB",
-    "box": "BOX", "boxes": "BOX", "reel": "REEL", "roll": "REEL",
-    "lot": "LOT", "pair": "PR", "pairs": "PR",
+    "each": "EA",
+    "piece": "EA",
+    "pieces": "EA",
+    "pc": "EA",
+    "pcs": "EA",
+    "unit": "EA",
+    "units": "EA",
+    "ea": "EA",
+    "item": "EA",
+    "items": "EA",
+    "1": "EA",
+    "meter": "M",
+    "meters": "M",
+    "metre": "M",
+    "metres": "M",
+    "foot": "FT",
+    "feet": "FT",
+    "ft": "FT",
+    "inch": "IN",
+    "inches": "IN",
+    "millimeter": "MM",
+    "mm": "MM",
+    "kilogram": "KG",
+    "kilograms": "KG",
+    "kg": "KG",
+    "gram": "G",
+    "grams": "G",
+    "pound": "LB",
+    "lbs": "LB",
+    "box": "BOX",
+    "boxes": "BOX",
+    "reel": "REEL",
+    "roll": "REEL",
+    "lot": "LOT",
+    "pair": "PR",
+    "pairs": "PR",
 }
 
 
@@ -40,56 +68,97 @@ def _normalise_uom(raw: str) -> str:
 
 # ── Category normalisation ────────────────────────────────────────────────────
 CANONICAL_CATEGORIES = [
-    "electronic", "electrical", "electromechanical",
-    "mechanical", "hydraulic", "pneumatic",
-    "software", "raw_material", "other",
+    "electronic",
+    "electrical",
+    "electromechanical",
+    "mechanical",
+    "hydraulic",
+    "pneumatic",
+    "software",
+    "raw_material",
+    "other",
 ]
 
 _CATEGORY_MAP = {
-    "electronic": "electronic", "electronics": "electronic",
-    "board": "electronic", "boards": "electronic",
-    "module": "electronic", "modules": "electronic",
-    "ic": "electronic", "integrated circuit": "electronic",
+    "electronic": "electronic",
+    "electronics": "electronic",
+    "board": "electronic",
+    "boards": "electronic",
+    "module": "electronic",
+    "modules": "electronic",
+    "ic": "electronic",
+    "integrated circuit": "electronic",
     "semiconductor": "electronic",
-    "motor driver": "electronic", "motor drivers": "electronic",
+    "motor driver": "electronic",
+    "motor drivers": "electronic",
     "motor driver boards": "electronic",
     "motor driver boards / modules": "electronic",
-    "driver": "electronic", "drivers": "electronic",
-    "controller": "electronic", "controllers": "electronic",
+    "driver": "electronic",
+    "drivers": "electronic",
+    "controller": "electronic",
+    "controllers": "electronic",
     "microcontroller": "electronic",
-    "sensor": "electronic", "sensors": "electronic",
-    "relay": "electronic", "relays": "electronic",
-    "switch": "electronic", "switches": "electronic",
-    "converter": "electronic", "converters": "electronic",
-    "soft starter": "electronic", "stepper driver": "electronic",
-    "brushless drive": "electronic", "drive": "electronic",
-    "amplifier": "electronic", "transistor": "electronic",
-    "diode": "electronic", "capacitor": "electronic",
-    "resistor": "electronic", "inductor": "electronic",
-    "display": "electronic", "connector": "electronic",
+    "sensor": "electronic",
+    "sensors": "electronic",
+    "relay": "electronic",
+    "relays": "electronic",
+    "switch": "electronic",
+    "switches": "electronic",
+    "converter": "electronic",
+    "converters": "electronic",
+    "soft starter": "electronic",
+    "stepper driver": "electronic",
+    "brushless drive": "electronic",
+    "drive": "electronic",
+    "amplifier": "electronic",
+    "transistor": "electronic",
+    "diode": "electronic",
+    "capacitor": "electronic",
+    "resistor": "electronic",
+    "inductor": "electronic",
+    "display": "electronic",
+    "connector": "electronic",
     "electrical": "electrical",
-    "cable": "electrical", "cables": "electrical",
-    "wire": "electrical", "wires": "electrical",
-    "power cable": "electrical", "fuse": "electrical",
-    "transformer": "electrical", "circuit breaker": "electrical",
+    "cable": "electrical",
+    "cables": "electrical",
+    "wire": "electrical",
+    "wires": "electrical",
+    "power cable": "electrical",
+    "fuse": "electrical",
+    "transformer": "electrical",
+    "circuit breaker": "electrical",
     "electromechanical": "electromechanical",
-    "motor": "electromechanical", "motors": "electromechanical",
-    "servo": "electromechanical", "servo motor": "electromechanical",
-    "actuator": "electromechanical", "solenoid": "electromechanical",
+    "motor": "electromechanical",
+    "motors": "electromechanical",
+    "servo": "electromechanical",
+    "servo motor": "electromechanical",
+    "actuator": "electromechanical",
+    "solenoid": "electromechanical",
     "encoder": "electromechanical",
     "mechanical": "mechanical",
-    "bracket": "mechanical", "brackets": "mechanical",
+    "bracket": "mechanical",
+    "brackets": "mechanical",
     "mounting bracket": "mechanical",
-    "bearing": "mechanical", "gear": "mechanical",
-    "shaft": "mechanical", "coupling": "mechanical",
-    "fastener": "mechanical", "housing": "mechanical",
-    "pump": "mechanical", "valve": "mechanical",
-    "hydraulic": "hydraulic", "hydraulics": "hydraulic",
-    "hydraulic pump": "hydraulic", "hydraulic valve": "hydraulic",
-    "pneumatic": "pneumatic", "pneumatics": "pneumatic",
-    "pneumatic valve": "pneumatic", "pneumatic cylinder": "pneumatic",
-    "software": "software", "firmware": "software",
-    "raw material": "raw_material", "raw materials": "raw_material",
+    "bearing": "mechanical",
+    "gear": "mechanical",
+    "shaft": "mechanical",
+    "coupling": "mechanical",
+    "fastener": "mechanical",
+    "housing": "mechanical",
+    "pump": "mechanical",
+    "valve": "mechanical",
+    "hydraulic": "hydraulic",
+    "hydraulics": "hydraulic",
+    "hydraulic pump": "hydraulic",
+    "hydraulic valve": "hydraulic",
+    "pneumatic": "pneumatic",
+    "pneumatics": "pneumatic",
+    "pneumatic valve": "pneumatic",
+    "pneumatic cylinder": "pneumatic",
+    "software": "software",
+    "firmware": "software",
+    "raw material": "raw_material",
+    "raw materials": "raw_material",
 }
 
 
@@ -108,6 +177,7 @@ def _normalise_category(raw: str) -> str:
 
 class EntityType(Enum):
     """Types of entities to extract."""
+
     PART = "part"
     SUPPLIER = "supplier"
     SPECIFICATION = "specification"
@@ -119,6 +189,7 @@ class EntityType(Enum):
 @dataclass
 class ExtractionResult:
     """Result of entity extraction."""
+
     entities: List[Dict[str, Any]]
     confidence: float
     source: str
@@ -129,12 +200,15 @@ class ExtractionResult:
 # Pydantic models for structured extraction
 class ExtractedPart(BaseModel):
     """Structured part information."""
+
     part_id: str = Field(description="Part number or ID (e.g., P-12345)")
     name: str = Field(description="Part name or description")
     category: Optional[str] = Field(
-        default=None, description="Category: electronic, mechanical, electrical, etc.")
+        default=None, description="Category: electronic, mechanical, electrical, etc."
+    )
     specifications: Dict[str, Any] = Field(
-        default_factory=dict, description="Technical specifications")
+        default_factory=dict, description="Technical specifications"
+    )
     unit_of_measure: Optional[str] = Field(default="EA", description="Unit of measure")
 
     class Config:
@@ -143,22 +217,21 @@ class ExtractedPart(BaseModel):
                 "part_id": "P-12345",
                 "name": "Servo Motor SM-400",
                 "category": "electronic",
-                "specifications": {
-                    "power_rating": "400W",
-                    "voltage": "24V DC"
-                },
-                "unit_of_measure": "EA"
+                "specifications": {"power_rating": "400W", "voltage": "24V DC"},
+                "unit_of_measure": "EA",
             }
         }
 
 
 class ExtractedSupplier(BaseModel):
     """Structured supplier information."""
+
     supplier_id: Optional[str] = Field(default=None, description="Supplier ID if mentioned")
     name: str = Field(description="Supplier company name")
     location: Optional[str] = Field(default=None, description="Country or region")
     certifications: List[str] = Field(
-        default_factory=list, description="Quality certifications (ISO9001, etc.)")
+        default_factory=list, description="Quality certifications (ISO9001, etc.)"
+    )
     contact_info: Dict[str, str] = Field(default_factory=dict, description="Contact information")
 
     class Config:
@@ -167,15 +240,14 @@ class ExtractedSupplier(BaseModel):
                 "name": "Precision Motors Inc",
                 "location": "Germany",
                 "certifications": ["ISO9001", "IATF16949"],
-                "contact_info": {
-                    "email": "sales@precisionmotors.de"
-                }
+                "contact_info": {"email": "sales@precisionmotors.de"},
             }
         }
 
 
 class ExtractedSupplyRelationship(BaseModel):
     """Structured supply relationship."""
+
     supplier_name: str = Field(description="Supplier name")
     part_id: str = Field(description="Part number")
     lead_time_days: Optional[int] = Field(default=None, description="Lead time in days")
@@ -190,20 +262,23 @@ class ExtractedSupplyRelationship(BaseModel):
                 "part_id": "P-12345",
                 "lead_time_days": 21,
                 "price": 285.50,
-                "currency": "USD"
+                "currency": "USD",
             }
         }
 
 
 class SupplyChainDocument(BaseModel):
     """Complete extraction from a supply chain document."""
+
     parts: List[ExtractedPart] = Field(default_factory=list)
     suppliers: List[ExtractedSupplier] = Field(default_factory=list)
     relationships: List[ExtractedSupplyRelationship] = Field(default_factory=list)
     document_type: str = Field(
-        description="Type of document: catalog, bom, price_list, purchase_order, etc.")
+        description="Type of document: catalog, bom, price_list, purchase_order, etc."
+    )
     confidence_notes: Optional[str] = Field(
-        default=None, description="Any notes about extraction confidence")
+        default=None, description="Any notes about extraction confidence"
+    )
 
 
 class ClaudeEntityExtractor:
@@ -231,20 +306,14 @@ class ClaudeEntityExtractor:
             anthropic_api_key=self.api_key,
             model=self.model,
             temperature=self.temperature,
-            max_tokens=self.max_tokens
+            max_tokens=self.max_tokens,
         )
 
         logger.info(f"Initialized ClaudeEntityExtractor with model: {self.model}")
 
-    @retry(
-        stop=stop_after_attempt(3),
-        wait=wait_exponential(multiplier=1, min=2, max=10)
-    )
+    @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def extract_from_text(
-        self,
-        text: str,
-        document_type: str = "unknown",
-        source: str = "unknown"
+        self, text: str, document_type: str = "unknown", source: str = "unknown"
     ) -> ExtractionResult:
         """
         Extract entities from text using Claude with structured output.
@@ -263,8 +332,11 @@ class ClaudeEntityExtractor:
         parser = PydanticOutputParser(pydantic_object=SupplyChainDocument)
 
         # Create prompt
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """You are an expert at extracting structured information from supply chain documents.  # noqa: E501
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """You are an expert at extracting structured information from supply chain documents.  # noqa: E501
 Extract parts, suppliers, and their relationships with high accuracy.
 
 Pay special attention to:
@@ -273,25 +345,32 @@ Pay special attention to:
 - Lead times and pricing
 - Certifications and quality standards
 
-{format_instructions}"""),
-            ("human", """Document Type: {document_type}
+{format_instructions}""",
+                ),
+                (
+                    "human",
+                    """Document Type: {document_type}
 
 Document Text:
 {text}
 
-Extract all supply chain entities from this document.""")
-        ])
+Extract all supply chain entities from this document.""",
+                ),
+            ]
+        )
 
         # Build chain
         chain = prompt | self.llm | parser
 
         try:
             # Execute extraction
-            result: SupplyChainDocument = chain.invoke({
-                "text": text,
-                "document_type": document_type,
-                "format_instructions": parser.get_format_instructions()
-            })
+            result: SupplyChainDocument = chain.invoke(
+                {
+                    "text": text,
+                    "document_type": document_type,
+                    "format_instructions": parser.get_format_instructions(),
+                }
+            )
 
             # Calculate confidence (simple heuristic - can be improved)
             confidence = self._calculate_confidence(result, text)
@@ -300,7 +379,7 @@ Extract all supply chain entities from this document.""")
             entities = {
                 "parts": [part.model_dump() for part in result.parts],
                 "suppliers": [supplier.model_dump() for supplier in result.suppliers],
-                "relationships": [rel.model_dump() for rel in result.relationships]
+                "relationships": [rel.model_dump() for rel in result.relationships],
             }
 
             logger.success(
@@ -313,18 +392,14 @@ Extract all supply chain entities from this document.""")
                 entities=[entities],
                 confidence=confidence,
                 source=source,
-                extraction_method=f"claude_{self.model}"
+                extraction_method=f"claude_{self.model}",
             )
 
         except Exception as e:
             logger.error(f"Extraction failed: {e}")
             raise
 
-    def extract_parts_only(
-        self,
-        text: str,
-        source: str = "unknown"
-    ) -> List[ExtractedPart]:
+    def extract_parts_only(self, text: str, source: str = "unknown") -> List[ExtractedPart]:
         """
         Extract only parts from text.
 
@@ -337,23 +412,27 @@ Extract all supply chain entities from this document.""")
         """
         parser = PydanticOutputParser(pydantic_object=ExtractedPart)
 
-        prompt = ChatPromptTemplate.from_messages([
-            ("system", """Extract part information from this text.
+        prompt = ChatPromptTemplate.from_messages(
+            [
+                (
+                    "system",
+                    """Extract part information from this text.
 Focus on part numbers, names, categories, and specifications.
 
-{format_instructions}"""),
-            ("human", "{text}")
-        ])
+{format_instructions}""",
+                ),
+                ("human", "{text}"),
+            ]
+        )
 
         chain = prompt | self.llm | parser
 
         try:
             # For multiple parts, we'll need to chunk or use a different approach
             # This is simplified - production would handle multiple parts better
-            result = chain.invoke({
-                "text": text,
-                "format_instructions": parser.get_format_instructions()
-            })
+            result = chain.invoke(
+                {"text": text, "format_instructions": parser.get_format_instructions()}
+            )
 
             return [result] if isinstance(result, ExtractedPart) else result
 
@@ -362,9 +441,7 @@ Focus on part numbers, names, categories, and specifications.
             return []
 
     def extract_with_direct_api(
-        self,
-        text: str,
-        document_type: str = "unknown"
+        self, text: str, document_type: str = "unknown"
     ) -> ExtractionResult:
         """
         Extract entities using direct Anthropic API for more control.
@@ -382,7 +459,7 @@ Focus on part numbers, names, categories, and specifications.
         # Use a higher token limit for extraction — the JSON response for a
         # large catalog can easily exceed the 4096 config default.
         EXTRACTION_MAX_TOKENS = 8192
-        CHUNK_SIZE = 6000   # characters; keeps response well within token budget
+        CHUNK_SIZE = 6000  # characters; keeps response well within token budget
 
         system_prompt = """You are an expert at extracting structured information from supply chain documents.  # noqa: E501
 
@@ -485,8 +562,8 @@ Rules:
             merged_rels = list(a.get("relationships", [])) + b.get("relationships", [])
 
             return {
-                "parts":         merged_parts,
-                "suppliers":     merged_suppliers,
+                "parts": merged_parts,
+                "suppliers": merged_suppliers,
                 "relationships": merged_rels,
             }
 
@@ -507,9 +584,7 @@ Rules:
                 if current.strip():
                     chunks.append(current.strip())
 
-            logger.info(
-                f"Extracting from {len(text)} chars split into {len(chunks)} chunk(s)"
-            )
+            logger.info(f"Extracting from {len(text)} chars split into {len(chunks)} chunk(s)")
 
             entities: dict = {"parts": [], "suppliers": [], "relationships": []}
             for i, chunk in enumerate(chunks):
@@ -550,15 +625,18 @@ Rules:
                     deduped_rels.append(r)
 
             entities = {
-                "parts":         deduped_parts,
-                "suppliers":     deduped_suppliers,
+                "parts": deduped_parts,
+                "suppliers": deduped_suppliers,
                 "relationships": deduped_rels,
             }
 
             duplicates_removed = (
-                len(entities.get("parts", [])) - len(deduped_parts) +
-                len(entities.get("suppliers", [])) - len(deduped_suppliers) +
-                len(entities.get("relationships", [])) - len(deduped_rels)
+                len(entities.get("parts", []))
+                - len(deduped_parts)
+                + len(entities.get("suppliers", []))
+                - len(deduped_suppliers)
+                + len(entities.get("relationships", []))
+                - len(deduped_rels)
             )
             if duplicates_removed > 0:
                 logger.info(f"Removed {duplicates_removed} duplicate entities after extraction")
@@ -581,12 +659,8 @@ Rules:
 
             # Normalise UOM and category across all extracted parts
             for part in entities.get("parts", []):
-                part["unit_of_measure"] = _normalise_uom(
-                    part.get("unit_of_measure", "EA")
-                )
-                part["category"] = _normalise_category(
-                    part.get("category", "")
-                )
+                part["unit_of_measure"] = _normalise_uom(part.get("unit_of_measure", "EA"))
+                part["category"] = _normalise_category(part.get("category", ""))
 
             return ExtractionResult(
                 entities=[entities],
@@ -599,11 +673,7 @@ Rules:
             logger.error(f"Direct API extraction failed: {e}")
             raise
 
-    def _calculate_confidence(
-        self,
-        result: SupplyChainDocument,
-        original_text: str
-    ) -> float:
+    def _calculate_confidence(self, result: SupplyChainDocument, original_text: str) -> float:
         """
         Calculate extraction confidence score.
 
@@ -642,9 +712,7 @@ Rules:
         return min(confidence, 1.0)
 
     def batch_extract(
-        self,
-        texts: List[str],
-        document_types: Optional[List[str]] = None
+        self, texts: List[str], document_types: Optional[List[str]] = None
     ) -> List[ExtractionResult]:
         """
         Extract entities from multiple documents.
@@ -674,9 +742,7 @@ Rules:
 
 # Convenience function
 def extract_entities_from_text(
-    text: str,
-    document_type: str = "unknown",
-    source: str = "unknown"
+    text: str, document_type: str = "unknown", source: str = "unknown"
 ) -> ExtractionResult:
     """
     Convenience function to extract entities using Claude.

@@ -16,6 +16,7 @@ from loguru import logger
 
 class RuleSeverity(Enum):
     """Severity level of rule violations."""
+
     INFO = "info"
     WARNING = "warning"
     ERROR = "error"
@@ -24,6 +25,7 @@ class RuleSeverity(Enum):
 
 class RuleType(Enum):
     """Types of rules."""
+
     COMPATIBILITY = "compatibility"
     CONSTRAINT = "constraint"
     VALIDATION = "validation"
@@ -34,6 +36,7 @@ class RuleType(Enum):
 @dataclass
 class RuleResult:
     """Result of applying a rule."""
+
     passed: bool
     rule_name: str
     rule_type: RuleType
@@ -52,6 +55,7 @@ class RuleResult:
 @dataclass
 class ReasoningResult:
     """Complete reasoning result with multiple rules applied."""
+
     subject: str  # What we're reasoning about
     passed: bool  # Overall pass/fail
     rules_applied: List[RuleResult]
@@ -72,7 +76,9 @@ class ReasoningResult:
     @property
     def warnings(self) -> List[RuleResult]:
         """Get warnings."""
-        return [r for r in self.rules_applied if not r.passed and r.severity == RuleSeverity.WARNING]  # noqa: E501
+        return [
+            r for r in self.rules_applied if not r.passed and r.severity == RuleSeverity.WARNING
+        ]  # noqa: E501
 
     def __str__(self) -> str:
         status = "✓ PASSED" if self.passed else "✗ FAILED"
@@ -98,7 +104,7 @@ class BaseRule(ABC):
         passed: bool,
         reason: str,
         details: Optional[Dict[str, Any]] = None,
-        confidence: float = 1.0
+        confidence: float = 1.0,
     ) -> RuleResult:
         """Helper to create a RuleResult."""
         return RuleResult(
@@ -109,7 +115,7 @@ class BaseRule(ABC):
             severity=self.severity,
             details=details or {},
             facts_used=self.facts_used.copy(),
-            confidence=confidence
+            confidence=confidence,
         )
 
 
@@ -173,7 +179,7 @@ class RulesEngine:
                 rule_type=rule.rule_type,
                 reason=f"Rule execution failed: {str(e)}",
                 severity=RuleSeverity.ERROR,
-                details={"error": str(e)}
+                details={"error": str(e)},
             )
 
     def apply_group(self, group_name: str, *args, **kwargs) -> List[RuleResult]:
@@ -198,12 +204,7 @@ class RulesEngine:
         return results
 
     def evaluate(
-        self,
-        subject: str,
-        rules: List[str],
-        stop_on_critical: bool = True,
-        *args,
-        **kwargs
+        self, subject: str, rules: List[str], stop_on_critical: bool = True, *args, **kwargs
     ) -> ReasoningResult:
         """
         Evaluate multiple rules and return comprehensive result.
@@ -230,7 +231,8 @@ class RulesEngine:
 
         # Determine overall pass/fail
         critical_failures = [
-            r for r in results if not r.passed and r.severity == RuleSeverity.CRITICAL]
+            r for r in results if not r.passed and r.severity == RuleSeverity.CRITICAL
+        ]
         error_failures = [r for r in results if not r.passed and r.severity == RuleSeverity.ERROR]
 
         overall_passed = len(critical_failures) == 0 and len(error_failures) == 0
@@ -253,8 +255,8 @@ class RulesEngine:
             provenance={
                 "rules_evaluated": [r.rule_name for r in results],
                 "evaluation_time": datetime.now().isoformat(),
-                "stop_on_critical": stop_on_critical
-            }
+                "stop_on_critical": stop_on_critical,
+            },
         )
 
     def get_rule_info(self) -> Dict[str, Any]:
@@ -265,9 +267,7 @@ class RulesEngine:
                 rt.value: len([r for r in self.rules.values() if r.rule_type == rt])
                 for rt in RuleType
             },
-            "groups": {
-                group: len(rules) for group, rules in self.rule_groups.items()
-            }
+            "groups": {group: len(rules) for group, rules in self.rule_groups.items()},
         }
 
 
@@ -280,13 +280,11 @@ if __name__ == "__main__":
             return self._create_result(
                 passed=passed,
                 reason=f"Value is {'positive' if passed else 'not positive'}",
-                details={"value": value}
+                details={"value": value},
             )
 
     engine = RulesEngine()
-    engine.register_rule(
-        ExampleRule("positive_value", RuleType.VALIDATION, RuleSeverity.ERROR)
-    )
+    engine.register_rule(ExampleRule("positive_value", RuleType.VALIDATION, RuleSeverity.ERROR))
 
     result = engine.apply_rule("positive_value", value=10)
     print(result)

@@ -31,6 +31,7 @@ router = APIRouter(prefix="/disruption", tags=["Disruption"])
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _parse_statuses(statuses: Optional[str]) -> list[str]:
     """Parse comma-separated statuses query param, defaulting to RELEASED."""
     if not statuses:
@@ -41,33 +42,36 @@ def _parse_statuses(statuses: Optional[str]) -> list[str]:
 def _serialise_report(report) -> dict:
     """Convert a DisruptionReport dataclass to a dict matching DisruptionReportResponse."""
     return {
-        "scenario":              report.scenario,
-        "disrupted_id":          report.disrupted_id,
-        "disrupted_name":        report.disrupted_name,
-        "bom_statuses":          report.bom_statuses,
-        "total_parts_affected":  report.total_parts_affected,
-        "summary":               report.summary,
+        "scenario": report.scenario,
+        "disrupted_id": report.disrupted_id,
+        "disrupted_name": report.disrupted_name,
+        "bom_statuses": report.bom_statuses,
+        "total_parts_affected": report.total_parts_affected,
+        "summary": report.summary,
         "affected_boms": [
             {
-                "bom_id":       bom.bom_id,
-                "bom_name":     bom.bom_name,
-                "bom_version":  bom.bom_version,
-                "bom_status":   bom.bom_status,
+                "bom_id": bom.bom_id,
+                "bom_name": bom.bom_name,
+                "bom_version": bom.bom_version,
+                "bom_status": bom.bom_status,
                 "severity_score": bom.severity_score,
                 "severity_label": bom.severity_label,
-                "actions":      [a.value for a in bom.actions],
+                "actions": [a.value for a in bom.actions],
                 "disrupted_parts": [
                     {
-                        "part_id":                 dp.part_id,
-                        "part_name":               dp.part_name,
-                        "criticality":             dp.criticality,
-                        "quantity_in_bom":         dp.quantity_in_bom,
+                        "part_id": dp.part_id,
+                        "part_name": dp.part_name,
+                        "criticality": dp.criticality,
+                        "quantity_in_bom": dp.quantity_in_bom,
                         "alternate_supplier_count": dp.alternate_supplier_count,
-                        "has_substitute":          dp.has_substitute,
+                        "has_substitute": dp.has_substitute,
                         "substitutes": [
-                            {"part_id": s.part_id, "part_name": s.part_name,
-                             "compatibility_type": s.compatibility_type,
-                             "notes": s.notes}
+                            {
+                                "part_id": s.part_id,
+                                "part_name": s.part_name,
+                                "compatibility_type": s.compatibility_type,
+                                "notes": s.notes,
+                            }
                             for s in dp.substitutes
                         ],
                     }
@@ -81,8 +85,12 @@ def _serialise_report(report) -> dict:
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.get("/supplier/{supplier_id}", response_model=DisruptionReportResponse,
-            dependencies=[Depends(verify_token)])
+
+@router.get(
+    "/supplier/{supplier_id}",
+    response_model=DisruptionReportResponse,
+    dependencies=[Depends(verify_token)],
+)
 def analyse_supplier_disruption(
     supplier_id: str,
     statuses: Optional[str] = Query(
@@ -124,13 +132,15 @@ def analyse_supplier_disruption(
 
     # Serialise first, then rerank the plain dicts (avoids mutating the dataclass)
     from src.ai.grounded import rerank_disruption_boms
+
     serialised = _serialise_report(report)
     serialised["affected_boms"] = rerank_disruption_boms(serialised["affected_boms"])
     return serialised
 
 
-@router.get("/part/{part_id}", response_model=DisruptionReportResponse,
-            dependencies=[Depends(verify_token)])
+@router.get(
+    "/part/{part_id}", response_model=DisruptionReportResponse, dependencies=[Depends(verify_token)]
+)
 def analyse_part_disruption(
     part_id: str,
     statuses: Optional[str] = Query(
@@ -164,12 +174,14 @@ def analyse_part_disruption(
         raise HTTPException(status_code=404, detail=str(exc))
 
     from src.ai.grounded import rerank_disruption_boms
+
     serialised = _serialise_report(report)
     serialised["affected_boms"] = rerank_disruption_boms(serialised["affected_boms"])
     return serialised
 
 
 # ── AI-powered narrative ──────────────────────────────────────────────────────
+
 
 @router.post("/ai-narrate", dependencies=[Depends(verify_token)])
 def ai_narrate_disruption(
@@ -197,8 +209,7 @@ def ai_narrate_disruption(
 
     if not disrupted_id or not disrupted_type or not report:
         raise HTTPException(
-            status_code=422,
-            detail="Body must include disrupted_id, disrupted_type, and report"
+            status_code=422, detail="Body must include disrupted_id, disrupted_type, and report"
         )
 
     try:

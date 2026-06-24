@@ -34,6 +34,7 @@ def _get_model():
     if _model is None:
         logger.info(f"Loading sentence-transformers model: {MODEL_NAME}")
         from sentence_transformers import SentenceTransformer
+
         _model = SentenceTransformer(MODEL_NAME)
         logger.info("Model loaded")
     return _model
@@ -86,6 +87,7 @@ def part_text(part: dict) -> str:
     like "24V stepper driver" find the right part.
     """
     import json
+
     parts_text = [
         part.get("name", ""),
         part.get("description", ""),
@@ -110,22 +112,33 @@ def supplier_text(supplier: dict) -> str:
     certs = supplier.get("certifications") or []
     if isinstance(certs, str):
         import json
+
         try:
             certs = json.loads(certs)
         except Exception:
             certs = [certs]
-    return " ".join(filter(None, [
-        supplier.get("name", ""),
-        supplier.get("location", ""),
-        " ".join(certs),
-    ]))
+    return " ".join(
+        filter(
+            None,
+            [
+                supplier.get("name", ""),
+                supplier.get("location", ""),
+                " ".join(certs),
+            ],
+        )
+    )
 
 
 def bom_text(bom: dict) -> str:
     """Build the text to embed for a BOM node."""
-    return " ".join(filter(None, [
-        bom.get("name", ""),
-        bom.get("description", ""),
-        bom.get("version", ""),
-        bom.get("status", ""),
-    ]))
+    return " ".join(
+        filter(
+            None,
+            [
+                bom.get("name", ""),
+                bom.get("description", ""),
+                bom.get("version", ""),
+                bom.get("status", ""),
+            ],
+        )
+    )

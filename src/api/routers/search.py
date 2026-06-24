@@ -34,40 +34,40 @@ from pydantic import BaseModel  # noqa: E402
 
 
 class SearchResultItem(BaseModel):
-    entity_id:   str
+    entity_id: str
     entity_type: str
-    name:        str
-    score:       float
+    name: str
+    score: float
 
 
 class SearchResponse(BaseModel):
-    query:        str
-    entity_type:  Optional[str]
-    results:      List[SearchResultItem]
-    total:        int
-    from_cache:   bool = False
+    query: str
+    entity_type: Optional[str]
+    results: List[SearchResultItem]
+    total: int
+    from_cache: bool = False
 
 
 class ReindexResponse(BaseModel):
-    parts:     int
+    parts: int
     suppliers: int
-    boms:      int
-    message:   str
+    boms: int
+    message: str
 
 
 class StatsResponse(BaseModel):
-    cache:        dict
+    cache: dict
     vector_counts: dict
 
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
-@router.get("", response_model=SearchResponse,
-            dependencies=[Depends(verify_token)])
+
+@router.get("", response_model=SearchResponse, dependencies=[Depends(verify_token)])
 def semantic_search(
-    q:         str = Query(..., min_length=2, description="Search query"),
-    type:      Optional[str] = Query(None, description="part | supplier | bom (omit for all)"),
-    limit:     int = Query(default=10, ge=1, le=50),
+    q: str = Query(..., min_length=2, description="Search query"),
+    type: Optional[str] = Query(None, description="part | supplier | bom (omit for all)"),
+    limit: int = Query(default=10, ge=1, le=50),
     min_score: float = Query(default=0.3, ge=0.0, le=1.0),
 ):
     """
@@ -86,14 +86,22 @@ def semantic_search(
 
     entity_type = type if type in ("part", "supplier", "bom") else None
     query_vec = embed(q)
-    raw_results = search(query_vec, entity_type=entity_type,
-                         limit=limit * 2,   # fetch extra for reranking headroom
-                         min_score=min_score)
+    raw_results = search(
+        query_vec,
+        entity_type=entity_type,
+        limit=limit * 2,  # fetch extra for reranking headroom
+        min_score=min_score,
+    )
 
     # Rerank by composite score (semantic + criticality + entity type)
     result_dicts = [
-        {"entity_id": r.entity_id, "entity_type": r.entity_type,
-         "name": r.name, "score": r.score, "data": {}}
+        {
+            "entity_id": r.entity_id,
+            "entity_type": r.entity_type,
+            "name": r.name,
+            "score": r.score,
+            "data": {},
+        }
         for r in raw_results
     ]
     reranked = rerank_search_results(result_dicts, q, boost_entity_type=entity_type)[:limit]
@@ -114,8 +122,7 @@ def semantic_search(
     )
 
 
-@router.post("/reindex", response_model=ReindexResponse,
-             dependencies=[Depends(verify_token)])
+@router.post("/reindex", response_model=ReindexResponse, dependencies=[Depends(verify_token)])
 def reindex(db: Neo4jClient = Depends(get_db)):
     """
     Rebuild all embedding vectors from the graph.
@@ -132,12 +139,11 @@ def reindex(db: Neo4jClient = Depends(get_db)):
         suppliers=counts["suppliers"],
         boms=counts["boms"],
         message=f"Indexed {total} entities ({counts['parts']} parts, "
-                f"{counts['suppliers']} suppliers, {counts['boms']} BOMs)",
+        f"{counts['suppliers']} suppliers, {counts['boms']} BOMs)",
     )
 
 
-@router.get("/stats", response_model=StatsResponse,
-            dependencies=[Depends(verify_token)])
+@router.get("/stats", response_model=StatsResponse, dependencies=[Depends(verify_token)])
 def search_stats(db: Neo4jClient = Depends(get_db)):
     """
     Cache hit rate and vector store entity counts.

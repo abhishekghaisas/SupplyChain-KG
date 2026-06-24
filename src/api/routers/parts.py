@@ -55,8 +55,12 @@ def list_parts(
     return [_row_to_part(r) for r in rows]
 
 
-@router.post("", response_model=PartResponse, status_code=status.HTTP_201_CREATED,
-             dependencies=[Depends(verify_token)])
+@router.post(
+    "",
+    response_model=PartResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(verify_token)],
+)
 def create_part(body: PartCreate, db: Neo4jClient = Depends(get_db)):
     """Create a new Part node."""
     db.create_part(
@@ -77,12 +81,16 @@ def get_part(part_id: str, db: Neo4jClient = Depends(get_db)):
     return _fetch_part(part_id, db)
 
 
-@router.get("/{part_id}/suppliers", response_model=List[SupplierForPartResponse],
-            dependencies=[Depends(verify_token)])
+@router.get(
+    "/{part_id}/suppliers",
+    response_model=List[SupplierForPartResponse],
+    dependencies=[Depends(verify_token)],
+)
 def get_part_suppliers(
     part_id: str,
     as_of: Optional[str] = Query(
-        None, description="ISO date for historical query, e.g. 2023-06-01"),
+        None, description="ISO date for historical query, e.g. 2023-06-01"
+    ),
     db: Neo4jClient = Depends(get_db),
 ):
     """Return current (or historical) suppliers for a part."""
@@ -94,8 +102,11 @@ def get_part_suppliers(
     return rows
 
 
-@router.get("/{part_id}/compatibility", response_model=List[CompatibilityResponse],
-            dependencies=[Depends(verify_token)])
+@router.get(
+    "/{part_id}/compatibility",
+    response_model=List[CompatibilityResponse],
+    dependencies=[Depends(verify_token)],
+)
 def get_part_compatibility(part_id: str, db: Neo4jClient = Depends(get_db)):
     """Return verified substitute parts for a given part."""
     _assert_part_exists(part_id, db)
@@ -112,8 +123,9 @@ def get_part_compatibility(part_id: str, db: Neo4jClient = Depends(get_db)):
     return db.execute_query(query, {"part_id": part_id})
 
 
-@router.get("/{part_id}/boms", response_model=List[BOMUsageResponse],
-            dependencies=[Depends(verify_token)])
+@router.get(
+    "/{part_id}/boms", response_model=List[BOMUsageResponse], dependencies=[Depends(verify_token)]
+)
 def get_part_bom_usage(part_id: str, db: Neo4jClient = Depends(get_db)):
     """Return all BOMs that contain this part."""
     _assert_part_exists(part_id, db)
@@ -121,6 +133,7 @@ def get_part_bom_usage(part_id: str, db: Neo4jClient = Depends(get_db)):
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
+
 
 def _row_to_part(row: dict) -> dict:
     specs_raw = row.get("specifications_json") or "{}"
@@ -158,6 +171,7 @@ def _assert_part_exists(part_id: str, db: Neo4jClient) -> None:
     if not rows:
         raise HTTPException(status_code=404, detail=f"Part {part_id!r} not found")
 
+
 # ── AI-powered substitute suggestion ──────────────────────────────────────────
 
 
@@ -169,10 +183,9 @@ class SubstitutePersistRequest(_BaseModel):
     min_confidence: float = 0.5
 
 
-@router.post("/{part_id}/suggest-substitutes",
-             dependencies=[Depends(verify_token)])
+@router.post("/{part_id}/suggest-substitutes", dependencies=[Depends(verify_token)])
 def suggest_substitutes(
-    part_id:        str,
+    part_id: str,
     max_candidates: int = 5,
     db: Neo4jClient = Depends(get_db),
 ):
@@ -190,9 +203,7 @@ def suggest_substitutes(
     """
     from src.ai.substitute_suggester import SubstituteSuggester
 
-    rows = db.execute_query(
-        "MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id}
-    )
+    rows = db.execute_query("MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id})
     if not rows:
         raise HTTPException(status_code=404, detail=f"Part {part_id!r} not found")
 
@@ -200,7 +211,7 @@ def suggest_substitutes(
         suggester = SubstituteSuggester(db)
         suggestions = suggester.suggest(part_id, max_candidates=max_candidates)
         return {
-            "part_id":    part_id,
+            "part_id": part_id,
             "candidates": len(suggestions),
             "suggestions": [s.to_dict() for s in suggestions],
         }
@@ -210,11 +221,10 @@ def suggest_substitutes(
         raise HTTPException(status_code=500, detail=f"Substitute analysis failed: {exc}")
 
 
-@router.post("/{part_id}/persist-substitutes",
-             dependencies=[Depends(verify_token)])
+@router.post("/{part_id}/persist-substitutes", dependencies=[Depends(verify_token)])
 def persist_substitutes(
     part_id: str,
-    body:    SubstitutePersistRequest,
+    body: SubstitutePersistRequest,
     db: Neo4jClient = Depends(get_db),
 ):
     """
@@ -227,11 +237,13 @@ def persist_substitutes(
     BOM reviews and disruption analysis as "inferred substitute — requires validation."
     Engineers can then VERIFY or REJECT them via the compatibility tab.
     """
-    from src.ai.substitute_suggester import SubstituteSuggester, SubstituteSuggestion, SpecComparison  # noqa: E501
+    from src.ai.substitute_suggester import (
+        SubstituteSuggester,
+        SubstituteSuggestion,
+        SpecComparison,
+    )  # noqa: E501
 
-    rows = db.execute_query(
-        "MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id}
-    )
+    rows = db.execute_query("MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id})
     if not rows:
         raise HTTPException(status_code=404, detail=f"Part {part_id!r} not found")
 
@@ -240,36 +252,38 @@ def persist_substitutes(
         suggester = SubstituteSuggester(db)
         suggestions = []
         for s in body.suggestions:
-            suggestions.append(SubstituteSuggestion(
-                source_part_id=s["source_part_id"],
-                source_part_name=s["source_part_name"],
-                candidate_part_id=s["candidate_part_id"],
-                candidate_part_name=s["candidate_part_name"],
-                semantic_score=s["semantic_score"],
-                confidence=s["confidence"],
-                verdict=s["verdict"],
-                summary=s["summary"],
-                spec_comparisons=[
-                    SpecComparison(
-                        spec_name=sc["spec"],
-                        source_value=sc["source"],
-                        candidate_value=sc["candidate"],
-                        match=sc["match"],
-                        material=sc["material"],
-                        note=sc["note"],
-                    )
-                    for sc in s.get("spec_comparisons", [])
-                ],
-                matching_specs=s.get("matching_specs", []),
-                differing_specs=s.get("differing_specs", []),
-                reasoning=s.get("reasoning", ""),
-            ))
+            suggestions.append(
+                SubstituteSuggestion(
+                    source_part_id=s["source_part_id"],
+                    source_part_name=s["source_part_name"],
+                    candidate_part_id=s["candidate_part_id"],
+                    candidate_part_name=s["candidate_part_name"],
+                    semantic_score=s["semantic_score"],
+                    confidence=s["confidence"],
+                    verdict=s["verdict"],
+                    summary=s["summary"],
+                    spec_comparisons=[
+                        SpecComparison(
+                            spec_name=sc["spec"],
+                            source_value=sc["source"],
+                            candidate_value=sc["candidate"],
+                            match=sc["match"],
+                            material=sc["material"],
+                            note=sc["note"],
+                        )
+                        for sc in s.get("spec_comparisons", [])
+                    ],
+                    matching_specs=s.get("matching_specs", []),
+                    differing_specs=s.get("differing_specs", []),
+                    reasoning=s.get("reasoning", ""),
+                )
+            )
 
         written = suggester.persist(part_id, suggestions, body.min_confidence)
         return {
-            "part_id":  part_id,
-            "written":  written,
-            "message":  f"Wrote {written} inferred substitute relationship(s) to the graph",
+            "part_id": part_id,
+            "written": written,
+            "message": f"Wrote {written} inferred substitute relationship(s) to the graph",
         }
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Persist failed: {exc}")

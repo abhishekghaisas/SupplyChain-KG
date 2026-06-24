@@ -49,52 +49,54 @@ from src.config import get_settings
 @dataclass
 class SpecComparison:
     """Comparison of a single specification field between two parts."""
-    spec_name:   str
+
+    spec_name: str
     source_value: Any
     candidate_value: Any
-    match:       bool        # True if values are compatible
-    material:    bool        # True if a mismatch would matter in practice
-    note:        str         # Plain-English explanation
+    match: bool  # True if values are compatible
+    material: bool  # True if a mismatch would matter in practice
+    note: str  # Plain-English explanation
 
 
 @dataclass
 class SubstituteSuggestion:
     """A candidate substitute part with full reasoning."""
-    source_part_id:     str
-    source_part_name:   str
-    candidate_part_id:  str
+
+    source_part_id: str
+    source_part_name: str
+    candidate_part_id: str
     candidate_part_name: str
-    semantic_score:     float        # vector similarity (0-1)
-    confidence:         float        # Claude's compatibility confidence (0-1)
-    verdict:            str          # COMPATIBLE | LIKELY_COMPATIBLE | INCOMPATIBLE
-    summary:            str          # one-sentence explanation
-    spec_comparisons:   List[SpecComparison]
-    matching_specs:     List[str]    # spec names that match
-    differing_specs:    List[str]    # spec names that differ materially
-    reasoning:          str          # full Claude reasoning text
-    generated_at:       str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    semantic_score: float  # vector similarity (0-1)
+    confidence: float  # Claude's compatibility confidence (0-1)
+    verdict: str  # COMPATIBLE | LIKELY_COMPATIBLE | INCOMPATIBLE
+    summary: str  # one-sentence explanation
+    spec_comparisons: List[SpecComparison]
+    matching_specs: List[str]  # spec names that match
+    differing_specs: List[str]  # spec names that differ materially
+    reasoning: str  # full Claude reasoning text
+    generated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "source_part_id":     self.source_part_id,
-            "source_part_name":   self.source_part_name,
-            "candidate_part_id":  self.candidate_part_id,
+            "source_part_id": self.source_part_id,
+            "source_part_name": self.source_part_name,
+            "candidate_part_id": self.candidate_part_id,
             "candidate_part_name": self.candidate_part_name,
-            "semantic_score":     self.semantic_score,
-            "confidence":         self.confidence,
-            "verdict":            self.verdict,
-            "summary":            self.summary,
-            "matching_specs":     self.matching_specs,
-            "differing_specs":    self.differing_specs,
-            "reasoning":          self.reasoning,
+            "semantic_score": self.semantic_score,
+            "confidence": self.confidence,
+            "verdict": self.verdict,
+            "summary": self.summary,
+            "matching_specs": self.matching_specs,
+            "differing_specs": self.differing_specs,
+            "reasoning": self.reasoning,
             "spec_comparisons": [
                 {
-                    "spec":       sc.spec_name,
-                    "source":     sc.source_value,
-                    "candidate":  sc.candidate_value,
-                    "match":      sc.match,
-                    "material":   sc.material,
-                    "note":       sc.note,
+                    "spec": sc.spec_name,
+                    "source": sc.source_value,
+                    "candidate": sc.candidate_value,
+                    "match": sc.match,
+                    "material": sc.material,
+                    "note": sc.note,
                 }
                 for sc in self.spec_comparisons
             ],
@@ -118,24 +120,15 @@ def rerank_substitute_suggestions(
     - INCOMPATIBLE verdicts are excluded entirely
     """
     VERDICT_WEIGHT = {"COMPATIBLE": 1.0, "LIKELY_COMPATIBLE": 0.8, "INCOMPATIBLE": 0.0}
-    MATERIAL_DIFF_PENALTY = 0.15   # per material spec mismatch
+    MATERIAL_DIFF_PENALTY = 0.15  # per material spec mismatch
 
     def _score(s: "SubstituteSuggestion") -> float:
         verdict_weight = VERDICT_WEIGHT.get(s.verdict, 0.5)
         category_bonus = 1.0  # same category enforced upstream
-        material_diffs = sum(
-            1 for sc in s.spec_comparisons
-            if not sc.match and sc.material
-        )
+        material_diffs = sum(1 for sc in s.spec_comparisons if not sc.match and sc.material)
         penalty = material_diffs * MATERIAL_DIFF_PENALTY
 
-        return (
-            s.confidence
-            * s.semantic_score
-            * verdict_weight
-            * category_bonus
-            - penalty
-        )
+        return s.confidence * s.semantic_score * verdict_weight * category_bonus - penalty
 
     ranked = [s for s in suggestions if s.verdict != "INCOMPATIBLE"]
     ranked.sort(key=_score, reverse=True)
@@ -234,14 +227,14 @@ Return ONLY the JSON. No preamble, no markdown fences."""
         results = search(
             query_vec,
             entity_type="part",
-            limit=max_candidates + 1,   # +1 to account for self-match
+            limit=max_candidates + 1,  # +1 to account for self-match
             min_score=0.35,
         )
 
         candidates = []
         for r in results:
             if r.entity_id == part["id"]:
-                continue   # skip self
+                continue  # skip self
             candidate = self._fetch_part(r.entity_id)
             if candidate and candidate.get("category") == part.get("category"):
                 candidate["_semantic_score"] = r.score
@@ -264,19 +257,19 @@ Return ONLY the JSON. No preamble, no markdown fences."""
         Ask Claude to compare two parts' specs and return structured reasoning.
         """
         source_data = {
-            "id":             source["id"],
-            "name":           source["name"],
-            "category":       source.get("category"),
-            "criticality":    source.get("criticality"),
-            "description":    source.get("description"),
+            "id": source["id"],
+            "name": source["name"],
+            "category": source.get("category"),
+            "criticality": source.get("criticality"),
+            "description": source.get("description"),
             "specifications": source.get("specifications", {}),
         }
         candidate_data = {
-            "id":             candidate["id"],
-            "name":           candidate["name"],
-            "category":       candidate.get("category"),
-            "criticality":    candidate.get("criticality"),
-            "description":    candidate.get("description"),
+            "id": candidate["id"],
+            "name": candidate["name"],
+            "category": candidate.get("category"),
+            "criticality": candidate.get("criticality"),
+            "description": candidate.get("description"),
             "specifications": candidate.get("specifications", {}),
         }
 
@@ -294,11 +287,13 @@ Compare their specifications and return your structured assessment as JSON."""
             message = self.client.messages.create(
                 model=self.model,
                 max_tokens=1000,
-                system=[{
-                    "type": "text",
-                    "text": self._SYSTEM_PROMPT,
-                    "cache_control": {"type": "ephemeral"},
-                }],
+                system=[
+                    {
+                        "type": "text",
+                        "text": self._SYSTEM_PROMPT,
+                        "cache_control": {"type": "ephemeral"},
+                    }
+                ],
                 messages=[{"role": "user", "content": user_prompt}],
             )
             raw = message.content[0].text.strip()
@@ -419,18 +414,24 @@ Compare their specifications and return your structured assessment as JSON."""
             if s.confidence < min_confidence:
                 continue
 
-            reasoning_json = json.dumps({
-                "summary":         s.summary,
-                "reasoning":       s.reasoning,
-                "matching_specs":  s.matching_specs,
-                "differing_specs": s.differing_specs,
-                "semantic_score":  s.semantic_score,
-                "spec_comparisons": [
-                    {"spec": sc.spec_name, "match": sc.match,
-                     "material": sc.material, "note": sc.note}
-                    for sc in s.spec_comparisons
-                ],
-            })
+            reasoning_json = json.dumps(
+                {
+                    "summary": s.summary,
+                    "reasoning": s.reasoning,
+                    "matching_specs": s.matching_specs,
+                    "differing_specs": s.differing_specs,
+                    "semantic_score": s.semantic_score,
+                    "spec_comparisons": [
+                        {
+                            "spec": sc.spec_name,
+                            "match": sc.match,
+                            "material": sc.material,
+                            "note": sc.note,
+                        }
+                        for sc in s.spec_comparisons
+                    ],
+                }
+            )
 
             self.db.execute_write(
                 """
@@ -446,11 +447,11 @@ Compare their specifications and return your structured assessment as JSON."""
                     r.notes               = $summary
                 """,
                 {
-                    "source_id":     part_id,
-                    "candidate_id":  s.candidate_part_id,
-                    "confidence":    s.confidence,
+                    "source_id": part_id,
+                    "candidate_id": s.candidate_part_id,
+                    "confidence": s.confidence,
                     "reasoning_json": reasoning_json,
-                    "summary":       s.summary,
+                    "summary": s.summary,
                 },
             )
             written += 1

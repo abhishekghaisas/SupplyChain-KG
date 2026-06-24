@@ -39,6 +39,7 @@ settings = get_settings()
 
 # ─── Lifespan ─────────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup: ensure Neo4j constraints exist. Shutdown: nothing to do."""
@@ -89,6 +90,7 @@ app.add_middleware(
 
 # ─── Global error handler ─────────────────────────────────────────────────────
 
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception on {request.url}: {exc}")
@@ -99,6 +101,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ─── Routes ───────────────────────────────────────────────────────────────────
+
 
 @app.get("/health", response_model=HealthResponse, tags=["Health"])
 def health_check():
@@ -111,6 +114,7 @@ def health_check():
         db_status = "unavailable"
 
     from src.api.cache import get_stats as cache_stats
+
     return HealthResponse(
         status="ok",
         version=settings.app_version,
@@ -119,7 +123,7 @@ def health_check():
     )
 
 
-app.include_router(auth_router)          # POST /auth/token
+app.include_router(auth_router)  # POST /auth/token
 app.include_router(parts_router)
 app.include_router(suppliers_router)
 app.include_router(boms_router)

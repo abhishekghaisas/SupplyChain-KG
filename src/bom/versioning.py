@@ -30,9 +30,11 @@ from src.graph.neo4j_client import Neo4jClient
 
 # ── Data classes ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class ComponentSnapshot:
     """Flattened view of one BOM line item used for comparison."""
+
     part_id: str
     part_name: str
     category: str
@@ -44,8 +46,7 @@ class ComponentSnapshot:
 
     # Fields compared during diff (extend this list to widen the diff scope)
     DIFFABLE_FIELDS: tuple = field(
-        default=("quantity", "unit_of_measure", "notes"),
-        init=False, repr=False, compare=False
+        default=("quantity", "unit_of_measure", "notes"), init=False, repr=False, compare=False
     )
 
     def diff_against(self, other: "ComponentSnapshot") -> Dict[str, Dict[str, Any]]:
@@ -64,21 +65,23 @@ class ComponentSnapshot:
 @dataclass
 class ComponentChange:
     """A single modified component with its before/after values."""
+
     part_id: str
     part_name: str
-    changes: Dict[str, Dict[str, Any]]   # {field: {"from": ..., "to": ...}}
+    changes: Dict[str, Dict[str, Any]]  # {field: {"from": ..., "to": ...}}
 
 
 @dataclass
 class BOMDiff:
     """Complete diff between two BOM versions."""
+
     bom_id_a: str
     bom_id_b: str
     version_a: str
     version_b: str
-    added: List[ComponentSnapshot]       # in B, not in A
-    removed: List[ComponentSnapshot]     # in A, not in B
-    modified: List[ComponentChange]      # in both, but changed
+    added: List[ComponentSnapshot]  # in B, not in A
+    removed: List[ComponentSnapshot]  # in A, not in B
+    modified: List[ComponentChange]  # in both, but changed
     generated_at: datetime = field(default_factory=datetime.now)
 
     @property
@@ -157,6 +160,7 @@ class BOMDiff:
 
 
 # ── Manager ───────────────────────────────────────────────────────────────────
+
 
 class BOMVersionManager:
     """
@@ -279,15 +283,18 @@ class BOMVersionManager:
         RETURN count(nc) AS components_cloned
         """
 
-        rows = self._client.execute_query(query, {
-            "source_bom_id": source_bom_id,
-            "new_bom_id":    new_bom_id,
-            "new_name":      resolved_name,
-            "new_desc":      resolved_desc,
-            "new_version":   new_version,
-            "new_status":    new_status,
-            "cloned_by":     cloned_by or "system",
-        })
+        rows = self._client.execute_query(
+            query,
+            {
+                "source_bom_id": source_bom_id,
+                "new_bom_id": new_bom_id,
+                "new_name": resolved_name,
+                "new_desc": resolved_desc,
+                "new_version": new_version,
+                "new_status": new_status,
+                "cloned_by": cloned_by or "system",
+            },
+        )
 
         n = rows[0]["components_cloned"] if rows else 0
         logger.info(f"Cloned {n} components into {new_bom_id!r}")
@@ -321,8 +328,7 @@ class BOMVersionManager:
             raise ValueError(f"BOM not found: {bom_id_b!r}")
 
         logger.info(
-            f"Diffing {bom_id_a!r} (v{bom_a['version']}) "
-            f"vs {bom_id_b!r} (v{bom_b['version']})"
+            f"Diffing {bom_id_a!r} (v{bom_a['version']}) " f"vs {bom_id_b!r} (v{bom_b['version']})"
         )
 
         snap_a = self._fetch_snapshots(bom_id_a)
@@ -368,11 +374,18 @@ class BOMVersionManager:
         # Also include the BOM itself as the head of the chain
         head = self._client.get_bom(bom_id)
         if head:
-            result = [{"id": head["id"], "version": head["version"],
-                       "status": head["status"], "cloned_at": None, "cloned_by": None}]
+            result = [
+                {
+                    "id": head["id"],
+                    "version": head["version"],
+                    "status": head["status"],
+                    "cloned_at": None,
+                    "cloned_by": None,
+                }
+            ]
             # ancestors come after; deduplicate by id
             seen = {head["id"]}
-            for row in reversed(rows):   # oldest first
+            for row in reversed(rows):  # oldest first
                 if row["id"] not in seen:
                     result.insert(0, row)
                     seen.add(row["id"])
@@ -427,10 +440,12 @@ class BOMVersionManager:
         for k in sorted(keys_a & keys_b):
             changes = snap_a[k].diff_against(snap_b[k])
             if changes:
-                modified.append(ComponentChange(
-                    part_id=k,
-                    part_name=snap_b[k].part_name,
-                    changes=changes,
-                ))
+                modified.append(
+                    ComponentChange(
+                        part_id=k,
+                        part_name=snap_b[k].part_name,
+                        changes=changes,
+                    )
+                )
 
         return added, removed, modified

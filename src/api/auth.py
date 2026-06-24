@@ -58,11 +58,12 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 # ── Response schemas ──────────────────────────────────────────────────────────
 
+
 class TokenResponse(BaseModel):
-    access_token:  str
+    access_token: str
     refresh_token: str
-    token_type:    str = "bearer"
-    expires_in:    int       # access token seconds until expiry
+    token_type: str = "bearer"
+    expires_in: int  # access token seconds until expiry
     refresh_expires_in: int  # refresh token seconds until expiry
 
 
@@ -71,6 +72,7 @@ class RevokeRequest(BaseModel):
 
 
 # ── JWT helpers ───────────────────────────────────────────────────────────────
+
 
 def create_access_token(data: Dict[str, Any]) -> tuple[str, int]:
     """
@@ -84,12 +86,11 @@ def create_access_token(data: Dict[str, Any]) -> tuple[str, int]:
 
     payload = {
         **data,
-        "iat":  now,
-        "exp":  expire,
+        "iat": now,
+        "exp": expire,
         "type": "access",
     }
-    token = jwt.encode(payload, settings.jwt_secret_key,
-                       algorithm=settings.jwt_algorithm)
+    token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
     return token, settings.jwt_expire_minutes * 60
 
 
@@ -109,14 +110,13 @@ def create_refresh_token(client_id: str) -> tuple[str, str, int]:
     jti = str(uuid.uuid4())
 
     payload = {
-        "sub":  client_id,
-        "jti":  jti,
-        "iat":  now,
-        "exp":  expire,
+        "sub": client_id,
+        "jti": jti,
+        "iat": now,
+        "exp": expire,
         "type": "refresh",
     }
-    token = jwt.encode(payload, settings.jwt_secret_key,
-                       algorithm=settings.jwt_algorithm)
+    token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.jwt_algorithm)
 
     store_refresh_token(jti, client_id, expire_seconds)
     return token, jti, expire_seconds
@@ -130,8 +130,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     """
     settings = get_settings()
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key,
-                             algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except JWTError as exc:
         logger.warning(f"JWT decode failed: {exc}")
         raise HTTPException(
@@ -158,8 +157,7 @@ def _decode_refresh_token(token: str) -> Dict[str, Any]:
     """
     settings = get_settings()
     try:
-        payload = jwt.decode(token, settings.jwt_secret_key,
-                             algorithms=[settings.jwt_algorithm])
+        payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
     except JWTError as exc:
         logger.warning(f"Refresh JWT decode failed: {exc}")
         raise HTTPException(
@@ -187,12 +185,13 @@ def _verify_client_secret(plain: str, hashed: str) -> bool:
 
 # ── Endpoints ─────────────────────────────────────────────────────────────────
 
+
 @router.post("/token", response_model=TokenResponse)
 @limiter.limit(AUTH_LIMIT)
 def token(
-    request:       Request,
-    grant_type:    str = Form(...),
-    client_id:     str = Form(...),
+    request: Request,
+    grant_type: str = Form(...),
+    client_id: str = Form(...),
     client_secret: str = Form(...),
 ) -> TokenResponse:
     """
@@ -209,7 +208,7 @@ def token(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported grant_type: {grant_type!r}. "
-                   "Use 'client_credentials' or 'refresh_token'.",
+            "Use 'client_credentials' or 'refresh_token'.",
         )
 
     if client_id != settings.oauth2_client_id:
@@ -243,8 +242,8 @@ def token(
 @router.post("/refresh", response_model=TokenResponse)
 @limiter.limit(AUTH_LIMIT)
 def refresh(
-    request:       Request,
-    grant_type:    str = Form(...),
+    request: Request,
+    grant_type: str = Form(...),
     refresh_token: str = Form(...),
 ) -> TokenResponse:
     """
@@ -277,6 +276,7 @@ def refresh(
 
     # 2. Atomically validate and consume the JTI from Redis
     from src.api.token_store import validate_and_consume_refresh_token
+
     stored_client = validate_and_consume_refresh_token(jti)
 
     if stored_client is None:
@@ -294,8 +294,7 @@ def refresh(
 
     if stored_client != client_id:
         logger.error(
-            f"JTI {jti[:8]}… belongs to {stored_client!r} "
-            f"but token claims {client_id!r}"
+            f"JTI {jti[:8]}… belongs to {stored_client!r} " f"but token claims {client_id!r}"
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -303,7 +302,7 @@ def refresh(
         )
 
     # 3. Issue a new token pair
-    new_access,  expires_in = create_access_token({"sub": client_id})
+    new_access, expires_in = create_access_token({"sub": client_id})
     new_refresh, _, refresh_exp = create_refresh_token(client_id)
 
     logger.info(f"Refreshed token pair for client {client_id!r}")
@@ -319,7 +318,7 @@ def refresh(
 @limiter.limit(AUTH_LIMIT)
 def revoke(
     request: Request,
-    body:    RevokeRequest = Body(...),
+    body: RevokeRequest = Body(...),
 ) -> Response:
     """
     Revoke a refresh token (logout).
@@ -335,7 +334,7 @@ def revoke(
             body.refresh_token,
             settings.jwt_secret_key,
             algorithms=[settings.jwt_algorithm],
-            options={"verify_exp": False},   # allow revocation of expired tokens
+            options={"verify_exp": False},  # allow revocation of expired tokens
         )
     except JWTError:
         # Malformed token — nothing to revoke, return success anyway
@@ -345,6 +344,7 @@ def revoke(
     jti = payload.get("jti")
     if jti:
         from src.api.token_store import revoke_refresh_token
+
         revoke_refresh_token(jti)
         logger.info(f"Revoked refresh token JTI {jti[:8]}… via /auth/revoke")
     return Response(status_code=204)

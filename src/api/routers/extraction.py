@@ -39,6 +39,7 @@ def _stable_supplier_id(name: str) -> str:
       "Acme Corp."            → SUP-EXT-ACME_CORP
     """
     import re
+
     slug = re.sub(r"[^A-Z0-9]+", "_", name.upper().strip())
     slug = slug.strip("_")[:30]
     return f"SUP-EXT-{slug}"
@@ -48,6 +49,7 @@ router = APIRouter(prefix="/extraction", tags=["Extraction"])
 
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
+
 
 def _persist_entities(
     entities: Dict[str, Any],
@@ -71,9 +73,7 @@ def _persist_entities(
             errors.append(f"Part missing ID, skipped: {part.get('name', '?')}")
             continue
         try:
-            existing = db.execute_query(
-                "MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id}
-            )
+            existing = db.execute_query("MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id})
             if existing:
                 parts_skipped += 1
                 logger.debug(f"Part {part_id} already exists, skipping")
@@ -137,16 +137,12 @@ def _persist_entities(
             continue
         try:
             # Verify both nodes exist before creating relationship
-            part_exists = db.execute_query(
-                "MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id}
-            )
+            part_exists = db.execute_query("MATCH (p:Part {id: $id}) RETURN p.id", {"id": part_id})
             sup_exists = db.execute_query(
                 "MATCH (s:Supplier {id: $id}) RETURN s.id", {"id": supplier_id}
             )
             if not part_exists or not sup_exists:
-                logger.debug(
-                    f"Skipping relationship {supplier_id}→{part_id}: node(s) not found"
-                )
+                logger.debug(f"Skipping relationship {supplier_id}→{part_id}: node(s) not found")
                 continue
 
             # Idempotency: skip if relationship already exists
@@ -162,6 +158,7 @@ def _persist_entities(
                 continue
 
             from datetime import date
+
             db.create_supplies_relationship(
                 supplier_id=supplier_id,
                 part_id=part_id,
@@ -208,8 +205,8 @@ def _build_response(
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.post("/extract", response_model=ExtractionResponse,
-             dependencies=[Depends(verify_token)])
+
+@router.post("/extract", response_model=ExtractionResponse, dependencies=[Depends(verify_token)])
 def extract_entities(
     body: ExtractionRequest,
     db: Neo4jClient = Depends(get_db),
@@ -235,12 +232,14 @@ def extract_entities(
     if body.persist:
         persist_summary = _persist_entities(entities, db, source=body.source)
 
-    return _build_response(body, entities, result.confidence,
-                           result.extraction_method, persist_summary)
+    return _build_response(
+        body, entities, result.confidence, result.extraction_method, persist_summary
+    )
 
 
-@router.post("/extract-and-persist", response_model=ExtractionResponse,
-             dependencies=[Depends(verify_token)])
+@router.post(
+    "/extract-and-persist", response_model=ExtractionResponse, dependencies=[Depends(verify_token)]
+)
 def extract_and_persist(
     body: ExtractionRequest,
     db: Neo4jClient = Depends(get_db),

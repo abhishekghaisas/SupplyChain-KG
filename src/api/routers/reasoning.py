@@ -32,6 +32,7 @@ router = APIRouter(prefix="/reasoning", tags=["Reasoning"])
 
 # ─── Helpers ──────────────────────────────────────────────────────────────────
 
+
 def _rule_result_to_schema(r) -> RuleResultResponse:
     return RuleResultResponse(
         passed=r.passed,
@@ -72,8 +73,12 @@ def _fetch_supplier(supplier_id: str, db: Neo4jClient) -> dict:
 
 # ─── Endpoints ────────────────────────────────────────────────────────────────
 
-@router.post("/compatibility", response_model=CompatibilityCheckResponse,
-             dependencies=[Depends(verify_token)])
+
+@router.post(
+    "/compatibility",
+    response_model=CompatibilityCheckResponse,
+    dependencies=[Depends(verify_token)],
+)
 def check_compatibility(body: CompatibilityCheckRequest, db: Neo4jClient = Depends(get_db)):
     """
     Run the PartCompatibilityRule against two live parts from the graph.
@@ -87,8 +92,11 @@ def check_compatibility(body: CompatibilityCheckRequest, db: Neo4jClient = Depen
     tracker = ProvenanceTracker(
         f"Compatibility check: {body.original_part_id} → {body.substitute_part_id}"
     )
-    source_id = tracker.add_source("neo4j_knowledge_graph", "database",
-                                   {"parts": [body.original_part_id, body.substitute_part_id]})
+    source_id = tracker.add_source(
+        "neo4j_knowledge_graph",
+        "database",
+        {"parts": [body.original_part_id, body.substitute_part_id]},
+    )
 
     rule = PartCompatibilityRule()
     result = rule.check(original_part=original, substitute_part=substitute, db=db)
@@ -114,8 +122,9 @@ def check_compatibility(body: CompatibilityCheckRequest, db: Neo4jClient = Depen
     )
 
 
-@router.post("/lead-time", response_model=LeadTimeCheckResponse,
-             dependencies=[Depends(verify_token)])
+@router.post(
+    "/lead-time", response_model=LeadTimeCheckResponse, dependencies=[Depends(verify_token)]
+)
 def check_lead_time(body: LeadTimeCheckRequest):
     """
     Check whether a supplier's lead time allows delivery by the required date.
@@ -131,8 +140,11 @@ def check_lead_time(body: LeadTimeCheckRequest):
     return LeadTimeCheckResponse(feasible=result.passed, result=_rule_result_to_schema(result))
 
 
-@router.post("/qualify-supplier", response_model=SupplierQualificationResponse,
-             dependencies=[Depends(verify_token)])
+@router.post(
+    "/qualify-supplier",
+    response_model=SupplierQualificationResponse,
+    dependencies=[Depends(verify_token)],
+)
 def qualify_supplier(body: SupplierQualificationRequest, db: Neo4jClient = Depends(get_db)):
     """
     Check whether a supplier meets the given certification and rating requirements.

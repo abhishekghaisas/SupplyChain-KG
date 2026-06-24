@@ -48,7 +48,7 @@ def _get_redis():
     settings = get_settings()
     host = settings.redis_host or "localhost"
     port = settings.redis_port or 6379
-    db = (settings.redis_db or 0) + 1   # use db+1 to separate from rate-limit keys
+    db = (settings.redis_db or 0) + 1  # use db+1 to separate from rate-limit keys
 
     return redis_lib.Redis(host=host, port=port, db=db, decode_responses=True)
 

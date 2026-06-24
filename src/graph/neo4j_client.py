@@ -17,7 +17,9 @@ from src.config import get_settings
 class Neo4jClient:
     """Client for interacting with Neo4j knowledge graph."""
 
-    def __init__(self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None):  # noqa: E501
+    def __init__(
+        self, uri: Optional[str] = None, user: Optional[str] = None, password: Optional[str] = None
+    ):  # noqa: E501
         """
         Initialize Neo4j client.
 
@@ -37,10 +39,7 @@ class Neo4jClient:
     def connect(self) -> None:
         """Establish connection to Neo4j."""
         try:
-            self._driver = GraphDatabase.driver(
-                self.uri,
-                auth=(self.user, self.password)
-            )
+            self._driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
             # Test connection
             self._driver.verify_connectivity()
             logger.info(f"Connected to Neo4j at {self.uri}")
@@ -71,9 +70,7 @@ class Neo4jClient:
         return self._driver.session(database=self.database)
 
     def execute_query(
-        self,
-        query: str,
-        parameters: Optional[Dict[str, Any]] = None
+        self, query: str, parameters: Optional[Dict[str, Any]] = None
     ) -> List[Dict[str, Any]]:
         """
         Execute a Cypher query and return results.
@@ -89,11 +86,7 @@ class Neo4jClient:
             result = session.run(query, parameters or {})
             return [dict(record) for record in result]
 
-    def execute_write(
-        self,
-        query: str,
-        parameters: Optional[Dict[str, Any]] = None
-    ) -> None:
+    def execute_write(self, query: str, parameters: Optional[Dict[str, Any]] = None) -> None:
         """
         Execute a write query.
 
@@ -112,7 +105,6 @@ class Neo4jClient:
             "CREATE CONSTRAINT supplier_id IF NOT EXISTS FOR (s:Supplier) REQUIRE s.id IS UNIQUE",
             "CREATE CONSTRAINT bom_id IF NOT EXISTS FOR (b:BOM) REQUIRE b.id IS UNIQUE",
             "CREATE CONSTRAINT po_id IF NOT EXISTS FOR (po:PurchaseOrder) REQUIRE po.id IS UNIQUE",
-
             # Indexes for performance
             "CREATE INDEX part_category IF NOT EXISTS FOR (p:Part) ON (p.category)",
             "CREATE INDEX part_criticality IF NOT EXISTS FOR (p:Part) ON (p.criticality)",
@@ -135,7 +127,7 @@ class Neo4jClient:
         category: str,
         criticality: str,
         specifications: Dict[str, Any],
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Create a Part node.
@@ -180,7 +172,7 @@ class Neo4jClient:
             "criticality": criticality,
             "specifications_json": specs_json,
             "unit_of_measure": unit_of_measure,
-            **kwargs
+            **kwargs,
         }
 
         self.execute_write(query, parameters)
@@ -189,9 +181,16 @@ class Neo4jClient:
         try:
             from src.search.embedder import embed, part_text
             from src.search.vector_store import upsert as vec_upsert
-            text = part_text({"name": name, "description": description,
-                              "category": category, "criticality": criticality,
-                              "specifications_json": specs_json})
+
+            text = part_text(
+                {
+                    "name": name,
+                    "description": description,
+                    "category": category,
+                    "criticality": criticality,
+                    "specifications_json": specs_json,
+                }
+            )
             vec_upsert(part_id, "part", name, embed(text))
         except Exception as _e:
             logger.debug(f"Part embedding skipped: {_e}")
@@ -203,7 +202,7 @@ class Neo4jClient:
         location: str,
         certifications: List[str],
         status: str = "ACTIVE",
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Create a Supplier node.
@@ -217,11 +216,11 @@ class Neo4jClient:
             **kwargs: Additional properties
         """
         # Convert contact_info dict to JSON if present
-        contact_info = kwargs.pop('contact_info', {})
-        contact_info_json = json.dumps(contact_info) if contact_info else '{}'
-        tier = kwargs.pop('tier', 2)
-        rating = kwargs.pop('rating', 0.0)
-        established_date = kwargs.pop('established_date', None)
+        contact_info = kwargs.pop("contact_info", {})
+        contact_info_json = json.dumps(contact_info) if contact_info else "{}"
+        tier = kwargs.pop("tier", 2)
+        rating = kwargs.pop("rating", 0.0)
+        established_date = kwargs.pop("established_date", None)
 
         query = """
         MERGE (s:Supplier {id: $id})
@@ -256,7 +255,7 @@ class Neo4jClient:
             "tier": tier,
             "rating": rating,
             "established_date": established_date,
-            **kwargs
+            **kwargs,
         }
 
         self.execute_write(query, parameters)
@@ -264,8 +263,10 @@ class Neo4jClient:
         try:
             from src.search.embedder import embed, supplier_text
             from src.search.vector_store import upsert as vec_upsert
-            text = supplier_text({"name": name, "location": location,
-                                  "certifications": certifications})
+
+            text = supplier_text(
+                {"name": name, "location": location, "certifications": certifications}
+            )
             vec_upsert(supplier_id, "supplier", name, embed(text))
         except Exception as _e:
             logger.debug(f"Supplier embedding skipped: {_e}")
@@ -279,7 +280,7 @@ class Neo4jClient:
         price: float,
         currency: str = "USD",
         valid_to: Optional[Union[str, date]] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Create SUPPLIES relationship between Supplier and Part.
@@ -318,18 +319,20 @@ class Neo4jClient:
         """
 
         parameters = {
-            "supplier_id":           supplier_id,
-            "part_id":               part_id,
-            "valid_from":            str(valid_from) if isinstance(valid_from, date) else valid_from,  # noqa: E501
-            "valid_to":              str(valid_to) if isinstance(valid_to, date) else valid_to,
-            "lead_time_days":        lead_time_days,
-            "price":                 price,
-            "currency":              currency,
-            "min_order_quantity":    min_order_quantity,
+            "supplier_id": supplier_id,
+            "part_id": part_id,
+            "valid_from": str(valid_from)
+            if isinstance(valid_from, date)
+            else valid_from,  # noqa: E501
+            "valid_to": str(valid_to) if isinstance(valid_to, date) else valid_to,
+            "lead_time_days": lead_time_days,
+            "price": price,
+            "currency": currency,
+            "min_order_quantity": min_order_quantity,
             "on_time_delivery_rate": on_time_delivery_rate,
-            "quality_rating":        quality_rating,
-            "source":                source,
-            "confidence":            confidence,
+            "quality_rating": quality_rating,
+            "source": source,
+            "confidence": confidence,
         }
 
         self.execute_write(query, parameters)
@@ -362,9 +365,7 @@ class Neo4jClient:
         return self.execute_query(query, {"part_id": part_id})
 
     def query_suppliers_at_date(
-        self,
-        part_id: str,
-        as_of_date: Union[str, date]
+        self, part_id: str, as_of_date: Union[str, date]
     ) -> List[Dict[str, Any]]:
         """
         Get suppliers for a part as of a specific date (temporal query).
@@ -418,7 +419,9 @@ class Neo4jClient:
             "supplier_id": supplier_id,
             "affected_parts_count": len(affected_parts),
             "affected_parts": affected_parts,
-            "critical_parts": [p for p in affected_parts if p["criticality"] in ["HIGH", "CRITICAL"]]  # noqa: E501
+            "critical_parts": [
+                p for p in affected_parts if p["criticality"] in ["HIGH", "CRITICAL"]
+            ],  # noqa: E501
         }
 
     # ─── BOM ──────────────────────────────────────────────────────────────────────
@@ -430,7 +433,7 @@ class Neo4jClient:
         description: str,
         version: str,
         status: str = "DRAFT",
-        **kwargs
+        **kwargs,
     ) -> None:
         """Create a BOM node."""
         query = """
@@ -443,10 +446,16 @@ class Neo4jClient:
             created_at: datetime()
         })
         """
-        self.execute_write(query, {
-            "id": bom_id, "name": name, "description": description,
-            "version": version, "status": status,
-        })
+        self.execute_write(
+            query,
+            {
+                "id": bom_id,
+                "name": name,
+                "description": description,
+                "version": version,
+                "status": status,
+            },
+        )
         logger.info(f"Created BOM: {bom_id}")
 
     def add_bom_component(
@@ -481,14 +490,18 @@ class Neo4jClient:
         MERGE (b)-[:CONTAINS]->(c)
         MERGE (c)-[:REFERENCES]->(p)
         """
-        self.execute_write(query, {
-            "bom_id": bom_id, "part_id": part_id,
-            "component_id": component_id,
-            "quantity": quantity,
-            "reference_designator": reference_designator,
-            "unit_of_measure": unit_of_measure,
-            "notes": notes,
-        })
+        self.execute_write(
+            query,
+            {
+                "bom_id": bom_id,
+                "part_id": part_id,
+                "component_id": component_id,
+                "quantity": quantity,
+                "reference_designator": reference_designator,
+                "unit_of_measure": unit_of_measure,
+                "notes": notes,
+            },
+        )
         logger.info(f"Added component {part_id} (qty {quantity}) to BOM {bom_id}")
 
     def get_bom(self, bom_id: str) -> dict | None:
@@ -497,7 +510,7 @@ class Neo4jClient:
             "MATCH (b:BOM {id: $id}) RETURN b.id AS id, b.name AS name, "
             "b.description AS description, b.version AS version, b.status AS status, "
             "toString(b.created_at) AS created_at",
-            {"id": bom_id}
+            {"id": bom_id},
         )
         return rows[0] if rows else None
 
@@ -584,19 +597,14 @@ class Neo4jClient:
 
     def delete_bom(self, bom_id: str) -> bool:
         """Delete a BOM and its Component nodes (Parts are preserved)."""
-        rows = self.execute_query(
-            "MATCH (b:BOM {id: $id}) RETURN b.id", {"id": bom_id}
-        )
+        rows = self.execute_query("MATCH (b:BOM {id: $id}) RETURN b.id", {"id": bom_id})
         if not rows:
             return False
         self.execute_write(
-            "MATCH (b:BOM {id: $id})-[:CONTAINS]->(c:Component) DETACH DELETE b, c",
-            {"id": bom_id}
+            "MATCH (b:BOM {id: $id})-[:CONTAINS]->(c:Component) DETACH DELETE b, c", {"id": bom_id}
         )
         # Also delete the BOM itself if it had no components
-        self.execute_write(
-            "MATCH (b:BOM {id: $id}) DETACH DELETE b", {"id": bom_id}
-        )
+        self.execute_write("MATCH (b:BOM {id: $id}) DETACH DELETE b", {"id": bom_id})
         logger.info(f"Deleted BOM: {bom_id}")
         return True
 

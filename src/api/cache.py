@@ -43,26 +43,33 @@ from starlette.responses import Response
 # ── TTL map ───────────────────────────────────────────────────────────────────
 
 _TTL: list[tuple[str, int]] = [
-    (r"^/parts",     300),
+    (r"^/parts", 300),
     (r"^/suppliers", 300),
-    (r"^/boms",       60),
+    (r"^/boms", 60),
     (r"^/reasoning", 600),
     (r"^/disruption", 600),
-    (r"^/search",    120),
+    (r"^/search", 120),
 ]
 _DEFAULT_TTL = 180
 
 # Endpoints that should never be cached
-_SKIP_PATHS = {"/health", "/docs", "/redoc", "/openapi.json", "/auth/token",
-               "/auth/refresh", "/auth/revoke"}
+_SKIP_PATHS = {
+    "/health",
+    "/docs",
+    "/redoc",
+    "/openapi.json",
+    "/auth/token",
+    "/auth/refresh",
+    "/auth/revoke",
+}
 
 # Redis key prefixes for invalidation
 _INVALIDATION_MAP: list[tuple[str, str]] = [
-    (r"^/parts",      "cache:parts"),
-    (r"^/suppliers",  "cache:suppliers"),
-    (r"^/boms",       "cache:boms"),
+    (r"^/parts", "cache:parts"),
+    (r"^/suppliers", "cache:suppliers"),
+    (r"^/boms", "cache:boms"),
     (r"^/disruption", "cache:disruption"),
-    (r"^/search",     "cache:search"),
+    (r"^/search", "cache:search"),
 ]
 
 _METRICS_KEY = "cache:metrics"
@@ -90,15 +97,18 @@ def _cache_key(method: str, path: str, query: str) -> str:
 def _get_redis():
     import redis as redis_lib
     from src.config import get_settings
+
     s = get_settings()
     host = s.redis_host or "localhost"
     port = s.redis_port or 6379
-    db = (s.redis_db or 0) + 2   # db+2 — separate from rate-limit (db) and tokens (db+1)
-    return redis_lib.Redis(host=host, port=port, db=db, decode_responses=True,
-                           socket_connect_timeout=1)
+    db = (s.redis_db or 0) + 2  # db+2 — separate from rate-limit (db) and tokens (db+1)
+    return redis_lib.Redis(
+        host=host, port=port, db=db, decode_responses=True, socket_connect_timeout=1
+    )
 
 
 # ── Cache helpers (used by middleware + stats endpoint) ───────────────────────
+
 
 def get_cached(key: str) -> Optional[str]:
     try:
@@ -144,9 +154,9 @@ def get_stats() -> dict:
         misses = int(r.hget(_METRICS_KEY, "misses") or 0)
         total = hits + misses
         return {
-            "hits":     hits,
-            "misses":   misses,
-            "total":    total,
+            "hits": hits,
+            "misses": misses,
+            "total": total,
             "hit_rate": round(hits / total, 3) if total else 0.0,
         }
     except Exception:
@@ -154,6 +164,7 @@ def get_stats() -> dict:
 
 
 # ── Middleware ─────────────────────────────────────────────────────────────────
+
 
 class CacheMiddleware(BaseHTTPMiddleware):
     """
@@ -196,7 +207,7 @@ class CacheMiddleware(BaseHTTPMiddleware):
                     headers={"X-Cache": "HIT"},
                 )
             except Exception:
-                pass   # corrupted cache entry — fall through to live request
+                pass  # corrupted cache entry — fall through to live request
 
         # ── Cache miss: call endpoint and store result ─────────────────────────
         response = await call_next(request)

@@ -35,21 +35,23 @@ EntityType = Literal["part", "supplier", "bom"]
 
 @dataclass
 class SearchResult:
-    entity_id:   str
+    entity_id: str
     entity_type: str
-    name:        str
-    score:       float          # cosine similarity, 0.0–1.0
+    name: str
+    score: float  # cosine similarity, 0.0–1.0
 
 
 def _get_redis():
     import redis as redis_lib
     from src.config import get_settings
+
     s = get_settings()
     host = s.redis_host or "localhost"
     port = s.redis_port or 6379
-    db = (s.redis_db or 0) + 3   # db+3 — separate from other Redis uses
-    return redis_lib.Redis(host=host, port=port, db=db, decode_responses=True,
-                           socket_connect_timeout=1)
+    db = (s.redis_db or 0) + 3  # db+3 — separate from other Redis uses
+    return redis_lib.Redis(
+        host=host, port=port, db=db, decode_responses=True, socket_connect_timeout=1
+    )
 
 
 def _key(entity_id: str, entity_type: EntityType) -> str:
@@ -61,26 +63,29 @@ def _cosine(a: List[float], b: List[float]) -> float:
     # Vectors from sentence-transformers are already unit-normalised,
     # so cosine similarity = dot product.
     dot = sum(x * y for x, y in zip(a, b))
-    return max(-1.0, min(1.0, dot))   # clamp floating-point drift
+    return max(-1.0, min(1.0, dot))  # clamp floating-point drift
 
 
 # ── Write operations ──────────────────────────────────────────────────────────
 
+
 def upsert(
-    entity_id:   str,
+    entity_id: str,
     entity_type: EntityType,
-    name:        str,
-    vector:      List[float],
+    name: str,
+    vector: List[float],
 ) -> None:
     """Store or update an embedding in Redis."""
     try:
         r = _get_redis()
-        payload = json.dumps({
-            "id":     entity_id,
-            "name":   name,
-            "type":   entity_type,
-            "vector": vector,
-        })
+        payload = json.dumps(
+            {
+                "id": entity_id,
+                "name": name,
+                "type": entity_type,
+                "vector": vector,
+            }
+        )
         r.set(_key(entity_id, entity_type), payload)
         logger.debug(f"Upserted vector for {entity_type}:{entity_id}")
     except Exception as exc:
@@ -98,11 +103,12 @@ def delete(entity_id: str, entity_type: EntityType) -> None:
 
 # ── Search ────────────────────────────────────────────────────────────────────
 
+
 def search(
     query_vector: List[float],
-    entity_type:  Optional[EntityType] = None,
-    limit:        int = 10,
-    min_score:    float = 0.3,
+    entity_type: Optional[EntityType] = None,
+    limit: int = 10,
+    min_score: float = 0.3,
 ) -> List[SearchResult]:
     """
     Return the top-N most similar entities to the query vector.
@@ -133,12 +139,14 @@ def search(
                         entry = json.loads(raw)
                         score = _cosine(query_vector, entry["vector"])
                         if score >= min_score:
-                            results.append(SearchResult(
-                                entity_id=entry["id"],
-                                entity_type=entry["type"],
-                                name=entry["name"],
-                                score=round(score, 4),
-                            ))
+                            results.append(
+                                SearchResult(
+                                    entity_id=entry["id"],
+                                    entity_type=entry["type"],
+                                    name=entry["name"],
+                                    score=round(score, 4),
+                                )
+                            )
                     except Exception:
                         continue
             if cursor == 0:
@@ -153,6 +161,7 @@ def search(
 
 
 # ── Bulk reindex ──────────────────────────────────────────────────────────────
+
 
 def reindex_all(db_client) -> dict:
     """

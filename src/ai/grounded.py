@@ -47,6 +47,7 @@ from src.config import get_settings
 
 # ── Data structures ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class GroundedContext:
     """
@@ -55,10 +56,11 @@ class GroundedContext:
     Stored alongside the response so every AI output is fully auditable:
     "Claude said X because it saw Y data from the graph."
     """
-    subject:      str                    # e.g. "BOM-001", "SUP-001"
-    subject_type: str                    # "bom", "supplier", "disruption"
-    data:         Dict[str, Any]         # raw graph data injected into prompt
-    fetched_at:   str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+    subject: str  # e.g. "BOM-001", "SUP-001"
+    subject_type: str  # "bom", "supplier", "disruption"
+    data: Dict[str, Any]  # raw graph data injected into prompt
+    fetched_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
     data_sources: List[str] = field(default_factory=list)  # which queries ran
 
 
@@ -73,14 +75,15 @@ class GroundedResponse:
     prompt_tokens — input token count (cost tracking)
     output_tokens — output token count (cost tracking)
     """
-    content:       str
-    context_used:  GroundedContext
-    model:         str
-    prompt_tokens:        int
-    output_tokens:        int
-    cache_tokens_written: int = 0   # tokens written to Anthropic cache
-    cache_tokens_read:    int = 0   # tokens served from cache (cheaper)
-    generated_at:  str = field(default_factory=lambda: datetime.utcnow().isoformat())
+
+    content: str
+    context_used: GroundedContext
+    model: str
+    prompt_tokens: int
+    output_tokens: int
+    cache_tokens_written: int = 0  # tokens written to Anthropic cache
+    cache_tokens_read: int = 0  # tokens served from cache (cheaper)
+    generated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     @property
     def total_tokens(self) -> int:
@@ -98,28 +101,29 @@ class GroundedResponse:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "content":       self.content,
-            "model":         self.model,
-            "generated_at":  self.generated_at,
-            "token_usage":   {
-                "prompt":              self.prompt_tokens,
-                "output":              self.output_tokens,
-                "total":               self.total_tokens,
+            "content": self.content,
+            "model": self.model,
+            "generated_at": self.generated_at,
+            "token_usage": {
+                "prompt": self.prompt_tokens,
+                "output": self.output_tokens,
+                "total": self.total_tokens,
                 "cache_tokens_written": self.cache_tokens_written,
-                "cache_tokens_read":    self.cache_tokens_read,
-                "cache_savings_pct":    self.cache_savings_pct,
+                "cache_tokens_read": self.cache_tokens_read,
+                "cache_savings_pct": self.cache_savings_pct,
             },
             "context": {
-                "subject":      self.context_used.subject,
+                "subject": self.context_used.subject,
                 "subject_type": self.context_used.subject_type,
-                "fetched_at":   self.context_used.fetched_at,
+                "fetched_at": self.context_used.fetched_at,
                 "data_sources": self.context_used.data_sources,
-                "data":         self.context_used.data,
+                "data": self.context_used.data,
             },
         }
 
 
 # ── Grounded client ───────────────────────────────────────────────────────────
+
 
 class GroundedClient:
     """
@@ -476,9 +480,9 @@ ORDER BY parts_supplied DESC"""
 
     def _call(
         self,
-        context:    GroundedContext,
+        context: GroundedContext,
         user_prompt: str,
-        max_tokens:  int = 1500,
+        max_tokens: int = 1500,
     ) -> GroundedResponse:
         """
         Core call with prompt caching.
@@ -548,9 +552,7 @@ ORDER BY parts_supplied DESC"""
         sources = []
 
         # BOM header
-        bom_rows = self.db.execute_query(
-            "MATCH (b:BOM {id: $id}) RETURN b", {"id": bom_id}
-        )
+        bom_rows = self.db.execute_query("MATCH (b:BOM {id: $id}) RETURN b", {"id": bom_id})
         sources.append("BOM header")
         bom = dict(bom_rows[0]["b"]) if bom_rows else {}
 
@@ -589,11 +591,13 @@ ORDER BY parts_supplied DESC"""
                 """,
                 {"part_id": comp["part_id"]},
             )
-            supplier_coverage.append({
-                **dict(comp),
-                "suppliers":   suppliers,
-                "substitutes": substitutes,
-            })
+            supplier_coverage.append(
+                {
+                    **dict(comp),
+                    "suppliers": suppliers,
+                    "substitutes": substitutes,
+                }
+            )
         sources.append("Supplier coverage per component")
 
         # Approval and transition history
@@ -612,10 +616,10 @@ ORDER BY parts_supplied DESC"""
             subject=bom_id,
             subject_type="bom",
             data={
-                "bom":               bom,
-                "component_count":   len(components),
-                "components":        supplier_coverage,
-                "transitions":       transitions,
+                "bom": bom,
+                "component_count": len(components),
+                "components": supplier_coverage,
+                "transitions": transitions,
             },
             data_sources=sources,
         )
@@ -662,9 +666,9 @@ ORDER BY parts_supplied DESC"""
             subject=supplier_id,
             subject_type="supplier",
             data={
-                "supplier":      supplier,
+                "supplier": supplier,
                 "parts_supplied": parts_supplied,
-                "parts_count":   len(parts_supplied),
+                "parts_count": len(parts_supplied),
             },
             data_sources=sources,
         )
@@ -677,9 +681,9 @@ ORDER BY parts_supplied DESC"""
             subject=disrupted_id,
             subject_type="disruption",
             data={
-                "disrupted_id":   disrupted_id,
+                "disrupted_id": disrupted_id,
                 "disrupted_type": disrupted_type,
-                "report":         report,
+                "report": report,
             },
             data_sources=["disruption_analysis_report"],
         )
@@ -723,7 +727,9 @@ information is absent from the graph. These are unknown risks.
 
 ### Recommendation
 Two to three sentences. Direct. Reference specific part IDs and supplier names
-from the data.""".format(bom_id=bom_id)
+from the data.""".format(
+            bom_id=bom_id
+        )
 
         return self._call(context, prompt, max_tokens=1200)
 
@@ -769,9 +775,9 @@ Two to three sentences. Reference specific part IDs and criticality levels.""".f
 
     def narrate_disruption(
         self,
-        disrupted_id:   str,
+        disrupted_id: str,
         disrupted_type: str,
-        report:         Dict[str, Any],
+        report: Dict[str, Any],
     ) -> GroundedResponse:
         """
         Write a plain-English executive summary of a disruption analysis.
@@ -823,7 +829,7 @@ _SEVERITY_RANK = {"CRITICAL": 4, "HIGH": 3, "MEDIUM": 2, "LOW": 1}
 
 def rerank_search_results(
     results: List[Dict],
-    query:   str,
+    query: str,
     boost_entity_type: Optional[str] = None,
 ) -> List[Dict]:
     """
@@ -836,20 +842,20 @@ def rerank_search_results(
     This ensures a search for "critical motor" surfaces CRITICAL parts
     above LOW parts even if they have similar semantic scores.
     """
+
     def _score(r: Dict) -> float:
         base = float(r.get("score", 0.0))
-        crit_rank = _CRITICALITY_RANK.get(
-            (r.get("data") or {}).get("criticality", ""), 0
+        crit_rank = _CRITICALITY_RANK.get((r.get("data") or {}).get("criticality", ""), 0)
+        type_bonus = (
+            0.05 if (boost_entity_type and r.get("entity_type") == boost_entity_type) else 0.0
         )
-        type_bonus = 0.05 if (boost_entity_type and r.get(
-            "entity_type") == boost_entity_type) else 0.0
         return base + (crit_rank * 0.02) + type_bonus
 
     return sorted(results, key=_score, reverse=True)
 
 
 def rerank_nl_query_rows(
-    rows:     List[Dict],
+    rows: List[Dict],
     question: str,
 ) -> List[Dict]:
     """
@@ -860,6 +866,7 @@ def rerank_nl_query_rows(
     - Single-source indicators (supplier_count=1) get a boost
     - Rows with more non-null fields rank higher (more data = more useful)
     """
+
     def _score(row: Dict) -> float:
         score = 0.0
         vals = list(row.values())
@@ -896,6 +903,7 @@ def rerank_disruption_boms(affected_boms: List[Dict]) -> List[Dict]:
     BOMs that need immediate escalation and have a high proportion of
     critical/high parts float to the top regardless of raw severity score.
     """
+
     def _score(bom: Dict) -> float:
         base = float(bom.get("severity_score", 0.0))
         actions = bom.get("actions", [])
@@ -904,10 +912,7 @@ def rerank_disruption_boms(affected_boms: List[Dict]) -> List[Dict]:
         escalate_bonus = 0.3 if "ESCALATE" in actions else 0.0
 
         if parts:
-            critical_count = sum(
-                1 for p in parts
-                if p.get("criticality") in ("CRITICAL", "HIGH")
-            )
+            critical_count = sum(1 for p in parts if p.get("criticality") in ("CRITICAL", "HIGH"))
             critical_ratio = critical_count / len(parts)
         else:
             critical_ratio = 0.0
@@ -915,6 +920,7 @@ def rerank_disruption_boms(affected_boms: List[Dict]) -> List[Dict]:
         return base * (1 + escalate_bonus) * (1 + critical_ratio)
 
     return sorted(affected_boms, key=_score, reverse=True)
+
 
 # ── Natural language graph query ───────────────────────────────────────────────
 
@@ -999,32 +1005,33 @@ QUERY TIPS:
 @dataclass
 class NLQueryResult:
     """Result of a natural language graph query."""
-    question:      str
-    cypher:        str           # the generated Cypher query
-    raw_results:   List[Dict]    # raw Neo4j results
-    answer:        str           # Claude's plain-English interpretation
-    row_count:     int
-    model:                str
-    prompt_tokens:        int
-    output_tokens:        int
+
+    question: str
+    cypher: str  # the generated Cypher query
+    raw_results: List[Dict]  # raw Neo4j results
+    answer: str  # Claude's plain-English interpretation
+    row_count: int
+    model: str
+    prompt_tokens: int
+    output_tokens: int
     cache_tokens_written: int = 0
-    cache_tokens_read:    int = 0
-    generated_at:  str = field(default_factory=lambda: datetime.utcnow().isoformat())
+    cache_tokens_read: int = 0
+    generated_at: str = field(default_factory=lambda: datetime.utcnow().isoformat())
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            "question":    self.question,
-            "cypher":      self.cypher,
-            "row_count":   self.row_count,
-            "answer":      self.answer,
+            "question": self.question,
+            "cypher": self.cypher,
+            "row_count": self.row_count,
+            "answer": self.answer,
             "raw_results": self.raw_results[:20],
-            "model":       self.model,
+            "model": self.model,
             "token_usage": {
-                "prompt":               self.prompt_tokens,
-                "output":               self.output_tokens,
-                "total":                self.prompt_tokens + self.output_tokens,
+                "prompt": self.prompt_tokens,
+                "output": self.output_tokens,
+                "total": self.prompt_tokens + self.output_tokens,
                 "cache_tokens_written": self.cache_tokens_written,
-                "cache_tokens_read":    self.cache_tokens_read,
+                "cache_tokens_read": self.cache_tokens_read,
             },
             "generated_at": self.generated_at,
         }
@@ -1045,8 +1052,16 @@ class NLQueryEngine:
     """
 
     # Safety: only allow read queries
-    _FORBIDDEN = ("CREATE", "MERGE", "SET", "DELETE", "DETACH", "REMOVE",
-                  "CALL apoc.create", "CALL apoc.merge")
+    _FORBIDDEN = (
+        "CREATE",
+        "MERGE",
+        "SET",
+        "DELETE",
+        "DETACH",
+        "REMOVE",
+        "CALL apoc.create",
+        "CALL apoc.merge",
+    )
 
     def __init__(self, db, model: Optional[str] = None):
         settings = get_settings()
@@ -1063,11 +1078,13 @@ class NLQueryEngine:
         msg = self.client.messages.create(
             model=self.model,
             max_tokens=max_tokens,
-            system=[{
-                "type": "text",
-                "text": system,
-                "cache_control": {"type": "ephemeral"},
-            }],
+            system=[
+                {
+                    "type": "text",
+                    "text": system,
+                    "cache_control": {"type": "ephemeral"},
+                }
+            ],
             messages=[{"role": "user", "content": user}],
         )
         self._prompt_tokens += msg.usage.input_tokens
@@ -1126,8 +1143,8 @@ RULES:
     def interpret_results(
         self,
         question: str,
-        cypher:   str,
-        results:  List[Dict],
+        cypher: str,
+        results: List[Dict],
     ) -> str:
         """
         Interpret raw Neo4j query results as a cited plain-English answer.

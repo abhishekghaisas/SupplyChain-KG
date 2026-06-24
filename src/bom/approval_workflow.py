@@ -58,6 +58,7 @@ from src.reasoning.rules_engine import (
 
 # ── Status & transition model ─────────────────────────────────────────────────
 
+
 class BOMStatus(str, Enum):
     DRAFT = "DRAFT"
     REVIEW = "REVIEW"
@@ -67,14 +68,16 @@ class BOMStatus(str, Enum):
 
 
 # Valid (from, to) pairs — anything not listed is forbidden.
-ALLOWED_TRANSITIONS: frozenset[tuple[BOMStatus, BOMStatus]] = frozenset({
-    (BOMStatus.DRAFT,    BOMStatus.REVIEW),
-    (BOMStatus.REVIEW,   BOMStatus.RELEASED),
-    (BOMStatus.REVIEW,   BOMStatus.REJECTED),
-    (BOMStatus.RELEASED, BOMStatus.ARCHIVED),
-    (BOMStatus.RELEASED, BOMStatus.REJECTED),
-    (BOMStatus.REJECTED, BOMStatus.DRAFT),
-})
+ALLOWED_TRANSITIONS: frozenset[tuple[BOMStatus, BOMStatus]] = frozenset(
+    {
+        (BOMStatus.DRAFT, BOMStatus.REVIEW),
+        (BOMStatus.REVIEW, BOMStatus.RELEASED),
+        (BOMStatus.REVIEW, BOMStatus.REJECTED),
+        (BOMStatus.RELEASED, BOMStatus.ARCHIVED),
+        (BOMStatus.RELEASED, BOMStatus.REJECTED),
+        (BOMStatus.REJECTED, BOMStatus.DRAFT),
+    }
+)
 
 # Statuses from which no further transitions are ever allowed.
 TERMINAL_STATUSES: frozenset[BOMStatus] = frozenset({BOMStatus.ARCHIVED})
@@ -82,22 +85,25 @@ TERMINAL_STATUSES: frozenset[BOMStatus] = frozenset({BOMStatus.ARCHIVED})
 
 # ── Data classes ──────────────────────────────────────────────────────────────
 
+
 @dataclass
 class TransitionRecord:
     """One entry in the BOM's transition history."""
+
     transition_id: str
     from_status: str
     to_status: str
     actor: str
-    timestamp: str          # ISO-8601 string as stored in Neo4j
+    timestamp: str  # ISO-8601 string as stored in Neo4j
     notes: str
 
 
 @dataclass
 class ApprovalRecord:
     """Human approval attached to a BOM."""
+
     approver_id: str
-    approved_at: str        # ISO-8601
+    approved_at: str  # ISO-8601
     notes: str
 
 
@@ -110,6 +116,7 @@ class WorkflowResult:
     success=False → transition was blocked; reason explains why.
     rules_result  → populated when the rules gate ran (REVIEW → RELEASED).
     """
+
     success: bool
     bom_id: str
     from_status: str
@@ -120,6 +127,7 @@ class WorkflowResult:
 
 
 # ── BOMReleasabilityRule ──────────────────────────────────────────────────────
+
 
 class BOMReleasabilityRule(BaseRule):
     """
@@ -147,8 +155,10 @@ class BOMReleasabilityRule(BaseRule):
             risk_assessment: Output of Neo4jClient.get_bom_risk_assessment().
         """
         components = risk_assessment.get("components", [])
-        self.facts_used = [f"bom:{risk_assessment.get('bom_id')}",
-                           f"total_components:{len(components)}"]
+        self.facts_used = [
+            f"bom:{risk_assessment.get('bom_id')}",
+            f"total_components:{len(components)}",
+        ]
 
         no_supplier: List[str] = []
         single_source: List[str] = []
@@ -198,6 +208,7 @@ class BOMReleasabilityRule(BaseRule):
 
 
 # ── BOMWorkflow ───────────────────────────────────────────────────────────────
+
 
 class BOMWorkflow:
     """
@@ -252,11 +263,14 @@ class BOMWorkflow:
                         r.notes       = $notes
         RETURN toString(r.approved_at) AS approved_at
         """
-        rows = self._client.execute_query(query, {
-            "bom_id":      bom_id,
-            "approver_id": approver_id,
-            "notes":       notes,
-        })
+        rows = self._client.execute_query(
+            query,
+            {
+                "bom_id": bom_id,
+                "approver_id": approver_id,
+                "notes": notes,
+            },
+        )
         approved_at = rows[0]["approved_at"] if rows else datetime.now().isoformat()
         logger.info(f"BOM {bom_id!r} approved by {approver_id!r}")
 
@@ -296,8 +310,7 @@ class BOMWorkflow:
             target = BOMStatus(to_status)
         except ValueError:
             raise ValueError(
-                f"Invalid status {to_status!r}. "
-                f"Valid values: {[s.value for s in BOMStatus]}"
+                f"Invalid status {to_status!r}. " f"Valid values: {[s.value for s in BOMStatus]}"
             )
 
         bom = self._client.get_bom(bom_id)
@@ -349,9 +362,7 @@ class BOMWorkflow:
         # --- apply the transition ---
         self._write_transition(bom_id, current, target, actor, notes)
 
-        logger.info(
-            f"BOM {bom_id!r}: {current.value} → {target.value} by {actor!r}"
-        )
+        logger.info(f"BOM {bom_id!r}: {current.value} → {target.value} by {actor!r}")
         return WorkflowResult(
             success=True,
             bom_id=bom_id,
@@ -482,13 +493,16 @@ class BOMWorkflow:
         })
         CREATE (b)-[:HAS_TRANSITION]->(t)
         """
-        self._client.execute_write(query, {
-            "bom_id":      bom_id,
-            "from_status": current.value,
-            "to_status":   target.value,
-            "actor":       actor,
-            "notes":       notes,
-        })
+        self._client.execute_write(
+            query,
+            {
+                "bom_id": bom_id,
+                "from_status": current.value,
+                "to_status": target.value,
+                "actor": actor,
+                "notes": notes,
+            },
+        )
 
     @staticmethod
     def _build_default_rules_engine() -> RulesEngine:

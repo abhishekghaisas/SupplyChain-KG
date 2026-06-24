@@ -52,23 +52,24 @@ from src.graph.neo4j_client import Neo4jClient
 
 CRITICALITY_WEIGHT: Dict[str, float] = {
     "CRITICAL": 1.0,
-    "HIGH":     0.75,
-    "MEDIUM":   0.4,
-    "LOW":      0.1,
+    "HIGH": 0.75,
+    "MEDIUM": 0.4,
+    "LOW": 0.1,
 }
 
 # Sourcing-risk multipliers (applied to the criticality base score)
 _SOURCING_RISK: Dict[str, float] = {
     "no_alternate_no_substitute": 1.0,
     "no_alternate_has_substitute": 0.7,
-    "has_alternate":               0.4,
-    "multi_alternate":             0.2,
+    "has_alternate": 0.4,
+    "multi_alternate": 0.2,
 }
 
 DEFAULT_BOM_STATUSES = ("RELEASED",)
 
 
 # ── Enums / data classes ──────────────────────────────────────────────────────
+
 
 class RecommendedAction(str, Enum):
     USE_SUBSTITUTE = "USE_SUBSTITUTE"
@@ -80,23 +81,24 @@ class RecommendedAction(str, Enum):
 
 @dataclass
 class SubstituteInfo:
-    part_id:            str
-    part_name:          str
+    part_id: str
+    part_name: str
     compatibility_type: str
-    validation_status:  str
-    constraints:        Dict[str, Any]
-    notes:              str
+    validation_status: str
+    constraints: Dict[str, Any]
+    notes: str
 
 
 @dataclass
 class DisruptedPart:
     """One part affected within the context of a disruption scenario."""
-    part_id:            str
-    part_name:          str
-    criticality:        str
-    quantity_in_bom:    float
-    alternate_supplier_count: int          # active suppliers *excluding* the disrupted one
-    substitutes:        List[SubstituteInfo] = field(default_factory=list)
+
+    part_id: str
+    part_name: str
+    criticality: str
+    quantity_in_bom: float
+    alternate_supplier_count: int  # active suppliers *excluding* the disrupted one
+    substitutes: List[SubstituteInfo] = field(default_factory=list)
 
     @property
     def has_alternate_supplier(self) -> bool:
@@ -153,13 +155,13 @@ class DisruptedPart:
 
 @dataclass
 class AffectedBOM:
-    bom_id:          str
-    bom_name:        str
-    bom_version:     str
-    bom_status:      str
+    bom_id: str
+    bom_name: str
+    bom_version: str
+    bom_status: str
     disrupted_parts: List[DisruptedPart]
-    severity_score:  float               # 0.0–1.0
-    actions:         List[RecommendedAction]
+    severity_score: float  # 0.0–1.0
+    actions: List[RecommendedAction]
 
     @property
     def severity_label(self) -> str:
@@ -175,11 +177,12 @@ class AffectedBOM:
 @dataclass
 class DisruptionReport:
     """Top-level result returned by both analysis entry points."""
-    scenario:         str          # "SUPPLIER" or "PART"
-    disrupted_id:     str          # supplier_id or part_id
-    disrupted_name:   str
-    bom_statuses:     List[str]    # statuses that were searched
-    affected_boms:    List[AffectedBOM]
+
+    scenario: str  # "SUPPLIER" or "PART"
+    disrupted_id: str  # supplier_id or part_id
+    disrupted_name: str
+    bom_statuses: List[str]  # statuses that were searched
+    affected_boms: List[AffectedBOM]
     total_parts_affected: int
 
     @property
@@ -207,8 +210,7 @@ class DisruptionReport:
         ]
         if not self.affected_boms:
             lines.append("  No affected BOMs found.")
-        for bom in sorted(self.affected_boms,
-                          key=lambda b: b.severity_score, reverse=True):
+        for bom in sorted(self.affected_boms, key=lambda b: b.severity_score, reverse=True):
             lines += [
                 "",
                 f"  [{bom.severity_label}] {bom.bom_id} — {bom.bom_name} "
@@ -228,6 +230,7 @@ class DisruptionReport:
 
 
 # ── DisruptionAnalyzer ────────────────────────────────────────────────────────
+
 
 class DisruptionAnalyzer:
     """
@@ -336,8 +339,8 @@ class DisruptionAnalyzer:
 
         part_meta = {
             part_id: {
-                "part_id":    part_id,
-                "part_name":  part["name"],
+                "part_id": part_id,
+                "part_name": part["name"],
                 "criticality": part["criticality"],
             }
         }
@@ -345,7 +348,7 @@ class DisruptionAnalyzer:
         affected_boms = self._build_affected_boms(
             part_ids=[part_id],
             part_meta=part_meta,
-            disrupted_supplier_id=None,   # all suppliers are disrupted for this part
+            disrupted_supplier_id=None,  # all suppliers are disrupted for this part
             bom_statuses=list(bom_statuses),
         )
 
@@ -362,8 +365,7 @@ class DisruptionAnalyzer:
 
     def _fetch_supplier(self, supplier_id: str) -> Optional[Dict[str, Any]]:
         rows = self._client.execute_query(
-            "MATCH (s:Supplier {id: $id}) "
-            "RETURN s.id AS id, s.name AS name, s.status AS status",
+            "MATCH (s:Supplier {id: $id}) " "RETURN s.id AS id, s.name AS name, s.status AS status",
             {"id": supplier_id},
         )
         return rows[0] if rows else None
@@ -457,18 +459,21 @@ class DisruptionAnalyzer:
         result = []
         for row in rows:
             import json
+
             try:
                 constraints = json.loads(row.get("constraints_json") or "{}")
             except (json.JSONDecodeError, TypeError):
                 constraints = {}
-            result.append(SubstituteInfo(
-                part_id=row["part_id"],
-                part_name=row["part_name"],
-                compatibility_type=row.get("compatibility_type", ""),
-                validation_status=row.get("validation_status", ""),
-                constraints=constraints,
-                notes=row.get("notes") or "",
-            ))
+            result.append(
+                SubstituteInfo(
+                    part_id=row["part_id"],
+                    part_name=row["part_name"],
+                    compatibility_type=row.get("compatibility_type", ""),
+                    validation_status=row.get("validation_status", ""),
+                    constraints=constraints,
+                    notes=row.get("notes") or "",
+                )
+            )
         return result
 
     # ── Assembly helpers ──────────────────────────────────────────────────
@@ -492,11 +497,11 @@ class DisruptionAnalyzer:
             bid = row["bom_id"]
             if bid not in bom_parts:
                 bom_parts[bid] = {
-                    "bom_id":      bid,
-                    "bom_name":    row["bom_name"],
+                    "bom_id": bid,
+                    "bom_name": row["bom_name"],
                     "bom_version": row["bom_version"],
-                    "bom_status":  row["bom_status"],
-                    "parts":       [],
+                    "bom_status": row["bom_status"],
+                    "parts": [],
                 }
             bom_parts[bid]["parts"].append(row)
 
@@ -511,15 +516,17 @@ class DisruptionAnalyzer:
             severity = self._compute_severity(disrupted_parts)
             actions = self._aggregate_actions(disrupted_parts)
 
-            affected.append(AffectedBOM(
-                bom_id=bom_data["bom_id"],
-                bom_name=bom_data["bom_name"],
-                bom_version=bom_data["bom_version"],
-                bom_status=bom_data["bom_status"],
-                disrupted_parts=disrupted_parts,
-                severity_score=severity,
-                actions=actions,
-            ))
+            affected.append(
+                AffectedBOM(
+                    bom_id=bom_data["bom_id"],
+                    bom_name=bom_data["bom_name"],
+                    bom_version=bom_data["bom_version"],
+                    bom_status=bom_data["bom_status"],
+                    disrupted_parts=disrupted_parts,
+                    severity_score=severity,
+                    actions=actions,
+                )
+            )
 
         return affected
 
@@ -537,14 +544,16 @@ class DisruptionAnalyzer:
             alt_count = self._fetch_alternate_supplier_count(pid, disrupted_supplier_id)
             substitutes = self._fetch_substitutes(pid)
 
-            parts.append(DisruptedPart(
-                part_id=pid,
-                part_name=meta.get("part_name", ""),
-                criticality=meta.get("criticality", "LOW"),
-                quantity_in_bom=float(row.get("quantity") or 0),
-                alternate_supplier_count=alt_count,
-                substitutes=substitutes,
-            ))
+            parts.append(
+                DisruptedPart(
+                    part_id=pid,
+                    part_name=meta.get("part_name", ""),
+                    criticality=meta.get("criticality", "LOW"),
+                    quantity_in_bom=float(row.get("quantity") or 0),
+                    alternate_supplier_count=alt_count,
+                    substitutes=substitutes,
+                )
+            )
         return parts
 
     @staticmethod

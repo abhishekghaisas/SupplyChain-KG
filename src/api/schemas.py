@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 
 # ─── Parts ────────────────────────────────────────────────────────────────────
 
+
 class PartCreate(BaseModel):
     id: str = Field(..., description="Unique part ID, e.g. P-12345")
     name: str
@@ -42,6 +43,7 @@ class CompatibilityResponse(BaseModel):
 
 
 # ─── Suppliers ────────────────────────────────────────────────────────────────
+
 
 class SupplierCreate(BaseModel):
     id: str = Field(..., description="Unique supplier ID, e.g. SUP-001")
@@ -85,6 +87,7 @@ class DisruptionAssessmentResponse(BaseModel):
 
 
 # ─── Reasoning ────────────────────────────────────────────────────────────────
+
 
 class RuleResultResponse(BaseModel):
     passed: bool
@@ -136,6 +139,7 @@ class SupplierQualificationResponse(BaseModel):
 
 # ─── BOM ──────────────────────────────────────────────────────────────────────
 
+
 class ComponentCreate(BaseModel):
     part_id: str
     quantity: float = Field(..., gt=0)
@@ -152,7 +156,7 @@ class BOMCreate(BaseModel):
     status: str = Field(default="DRAFT", description="DRAFT | RELEASED | OBSOLETE")
     components: List[ComponentCreate] = Field(
         default_factory=list,
-        description="Optional: supply components inline to create BOM and add parts in one call"
+        description="Optional: supply components inline to create BOM and add parts in one call",
     )
 
 
@@ -206,17 +210,19 @@ class BOMUsageResponse(BaseModel):
     status: str
     quantity: float
 
+
 # ─── Extraction ───────────────────────────────────────────────────────────────
 
 
 class ExtractionRequest(BaseModel):
     text: str = Field(..., min_length=10, description="Document text to extract entities from")
     document_type: str = Field(
-        default="unknown", description="catalog | bom | price_list | purchase_order")
+        default="unknown", description="catalog | bom | price_list | purchase_order"
+    )
     source: str = Field(default="api_request")
     persist: bool = Field(
         default=False,
-        description="If true, write extracted parts and suppliers into Neo4j after extraction"
+        description="If true, write extracted parts and suppliers into Neo4j after extraction",
     )
 
 
@@ -253,92 +259,97 @@ class ExtractionResponse(BaseModel):
 
 # ─── Shared ───────────────────────────────────────────────────────────────────
 
+
 class HealthResponse(BaseModel):
     status: str
     version: str
     database: str
     cache: Optional[Dict[str, Any]] = None
 
+
 # ─── BOM Versioning ───────────────────────────────────────────────────────────
 
 
 class BOMCloneRequest(BaseModel):
-    new_bom_id:      str = Field(..., description="ID for the new BOM")
-    new_version:     str = Field(..., description="Version string, e.g. '2.0'")
-    new_name:        Optional[str] = Field(
-        default=None, description="Override name; defaults to source name")
+    new_bom_id: str = Field(..., description="ID for the new BOM")
+    new_version: str = Field(..., description="Version string, e.g. '2.0'")
+    new_name: Optional[str] = Field(
+        default=None, description="Override name; defaults to source name"
+    )
     new_description: Optional[str] = Field(default=None)
-    new_status:      str = Field(default="DRAFT")
-    cloned_by:       Optional[str] = Field(default=None, description="Actor ID")
+    new_status: str = Field(default="DRAFT")
+    cloned_by: Optional[str] = Field(default=None, description="Actor ID")
 
 
 class BOMCloneResponse(BaseModel):
     source_bom_id: str
-    new_bom_id:    str
-    new_version:   str
-    new_status:    str
-    cloned_by:     str
+    new_bom_id: str
+    new_version: str
+    new_status: str
+    cloned_by: str
 
 
 class BOMDiffResponse(BaseModel):
-    bom_id_a:   str
-    bom_id_b:   str
-    version_a:  str
-    version_b:  str
-    summary:    str
+    bom_id_a: str
+    bom_id_b: str
+    version_a: str
+    version_b: str
+    summary: str
     has_changes: bool
-    added:    List[Dict[str, Any]]
-    removed:  List[Dict[str, Any]]
+    added: List[Dict[str, Any]]
+    removed: List[Dict[str, Any]]
     modified: List[Dict[str, Any]]
 
 
 class BOMLineageResponse(BaseModel):
-    bom_id:  str
+    bom_id: str
     lineage: List[Dict[str, Any]]
 
 
 # ─── BOM Approval ─────────────────────────────────────────────────────────────
 
+
 class BOMApproveRequest(BaseModel):
     approver_id: str = Field(..., description="Identity of the approver (user ID / email)")
-    notes:       str = Field(default="")
+    notes: str = Field(default="")
 
 
 class BOMApprovalResponse(BaseModel):
-    bom_id:      str
+    bom_id: str
     approver_id: str
     approved_at: str
-    notes:       str
+    notes: str
 
 
 class BOMTransitionRequest(BaseModel):
     to_status: str = Field(..., description="DRAFT | REVIEW | RELEASED | ARCHIVED | REJECTED")
-    actor:     str = Field(..., description="Identity of the actor requesting the transition")
-    notes:     str = Field(default="")
+    actor: str = Field(..., description="Identity of the actor requesting the transition")
+    notes: str = Field(default="")
 
 
 class BOMTransitionResponse(BaseModel):
-    bom_id:        str
-    from_status:   str
-    to_status:     str
-    actor:         str
-    rules_passed:  Optional[bool] = None
+    bom_id: str
+    from_status: str
+    to_status: str
+    actor: str
+    rules_passed: Optional[bool] = None
     rules_summary: Optional[str] = None
-    approval:      Optional[str] = None   # approver_id if approval was present
+    approval: Optional[str] = None  # approver_id if approval was present
 
 
 class BOMTransitionHistoryResponse(BaseModel):
-    bom_id:      str
+    bom_id: str
     transitions: List[Dict[str, Any]]
 
 
 # ─── Disruption ───────────────────────────────────────────────────────────────
 
+
 class DisruptionReportResponse(BaseModel):
-    scenario:             str
-    disrupted_id:         str
-    disrupted_name:       str
-    bom_statuses:         List[str]
+    scenario: str
+    disrupted_id: str
+    disrupted_name: str
+    bom_statuses: List[str]
     total_parts_affected: int
-    summary:              str
-    affected_boms:        List[Dict[str, Any]]
+    summary: str
+    affected_boms: List[Dict[str, Any]]

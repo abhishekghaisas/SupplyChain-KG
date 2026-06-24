@@ -14,6 +14,7 @@ from loguru import logger
 
 class ProvenanceType(Enum):
     """Types of provenance entries."""
+
     DATA_SOURCE = "data_source"
     EXTRACTION = "extraction"
     VALIDATION = "validation"
@@ -24,6 +25,7 @@ class ProvenanceType(Enum):
 @dataclass
 class ProvenanceEntry:
     """Single entry in provenance chain."""
+
     entry_type: ProvenanceType
     description: str
     timestamp: datetime = field(default_factory=datetime.now)
@@ -41,7 +43,7 @@ class ProvenanceEntry:
             "actor": self.actor,
             "data": self.data,
             "confidence": self.confidence,
-            "parent_id": self.parent_id
+            "parent_id": self.parent_id,
         }
 
 
@@ -66,10 +68,7 @@ class ProvenanceTracker:
         logger.debug(f"Initialized provenance tracker for: {root_subject}")
 
     def add_source(
-        self,
-        source_name: str,
-        source_type: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, source_name: str, source_type: str, metadata: Optional[Dict[str, Any]] = None
     ) -> str:
         """
         Add a data source to provenance.
@@ -86,7 +85,7 @@ class ProvenanceTracker:
             entry_type=ProvenanceType.DATA_SOURCE,
             description=f"Data from {source_name}",
             actor=source_type,
-            data=metadata or {}
+            data=metadata or {},
         )
         self.entries.append(entry)
 
@@ -99,7 +98,7 @@ class ProvenanceTracker:
         extracted_by: str,
         entities_extracted: List[str],
         confidence: float,
-        source_id: Optional[str] = None
+        source_id: Optional[str] = None,
     ) -> str:
         """
         Add an extraction step to provenance.
@@ -119,7 +118,7 @@ class ProvenanceTracker:
             actor=extracted_by,
             confidence=confidence,
             data={"entities": entities_extracted},
-            parent_id=source_id
+            parent_id=source_id,
         )
         self.entries.append(entry)
 
@@ -133,7 +132,7 @@ class ProvenanceTracker:
         passed: bool,
         reason: str,
         details: Optional[Dict[str, Any]] = None,
-        parent_id: Optional[str] = None
+        parent_id: Optional[str] = None,
     ) -> str:
         """
         Add a validation step to provenance.
@@ -152,12 +151,8 @@ class ProvenanceTracker:
             entry_type=ProvenanceType.VALIDATION,
             description=f"Rule '{rule_name}': {'PASS' if passed else 'FAIL'} - {reason}",
             actor=rule_name,
-            data={
-                "passed": passed,
-                "reason": reason,
-                **(details or {})
-            },
-            parent_id=parent_id
+            data={"passed": passed, "reason": reason, **(details or {})},
+            parent_id=parent_id,
         )
         self.entries.append(entry)
 
@@ -171,7 +166,7 @@ class ProvenanceTracker:
         conclusion: str,
         facts_used: List[str],
         confidence: float,
-        parent_ids: Optional[List[str]] = None
+        parent_ids: Optional[List[str]] = None,
     ) -> str:
         """
         Add a reasoning step to provenance.
@@ -194,8 +189,8 @@ class ProvenanceTracker:
             data={
                 "conclusion": conclusion,
                 "facts_used": facts_used,
-                "parent_ids": parent_ids or []
-            }
+                "parent_ids": parent_ids or [],
+            },
         )
         self.entries.append(entry)
 
@@ -208,7 +203,7 @@ class ProvenanceTracker:
         decision: str,
         rationale: str,
         confidence: float,
-        parent_ids: Optional[List[str]] = None
+        parent_ids: Optional[List[str]] = None,
     ) -> str:
         """
         Add final decision to provenance.
@@ -230,8 +225,8 @@ class ProvenanceTracker:
             data={
                 "decision": decision,
                 "rationale": rationale,
-                "contributing_entries": parent_ids or []
-            }
+                "contributing_entries": parent_ids or [],
+            },
         )
         self.entries.append(entry)
 
@@ -256,10 +251,10 @@ class ProvenanceTracker:
                 {
                     "timestamp": e.timestamp.isoformat(),
                     "type": e.entry_type.value,
-                    "description": e.description
+                    "description": e.description,
                 }
                 for e in self.entries
-            ]
+            ],
         }
 
     def format_for_display(self) -> str:
@@ -273,7 +268,7 @@ class ProvenanceTracker:
                 ProvenanceType.EXTRACTION: "🤖",
                 ProvenanceType.VALIDATION: "✓",
                 ProvenanceType.REASONING: "🧠",
-                ProvenanceType.DECISION: "⚖️"
+                ProvenanceType.DECISION: "⚖️",
             }.get(entry.entry_type, "•")
 
             lines.append(f"\n{i}. {icon} {entry.entry_type.value.upper()}")
@@ -294,23 +289,18 @@ if __name__ == "__main__":
 
     # Track a complete decision chain
     source_id = tracker.add_source(
-        "supplier_catalog_2024.pdf",
-        "document",
-        {"page": 5, "section": "Motors"}
+        "supplier_catalog_2024.pdf", "document", {"page": 5, "section": "Motors"}
     )
 
     extract_id = tracker.add_extraction(
-        "claude-sonnet-4",
-        ["Part", "Specifications"],
-        confidence=0.95,
-        source_id=source_id
+        "claude-sonnet-4", ["Part", "Specifications"], confidence=0.95, source_id=source_id
     )
 
     val_id = tracker.add_validation(
         "SpecificationMatchRule",
         passed=True,
         reason="All required specs match",
-        parent_id=extract_id
+        parent_id=extract_id,
     )
 
     reasoning_id = tracker.add_reasoning(
@@ -318,14 +308,14 @@ if __name__ == "__main__":
         "Parts are compatible for substitution",
         facts_used=["spec_match", "certification_valid"],
         confidence=0.92,
-        parent_ids=[val_id]
+        parent_ids=[val_id],
     )
 
     tracker.add_decision(
         "APPROVE substitution of P-12345 with P-67890",
         "All compatibility checks passed with 92% confidence",
         confidence=0.92,
-        parent_ids=[reasoning_id]
+        parent_ids=[reasoning_id],
     )
 
     print(tracker.format_for_display())

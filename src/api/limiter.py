@@ -40,6 +40,7 @@ DEFAULT_LIMIT = "120/minute"
 
 # ── Key function ──────────────────────────────────────────────────────────────
 
+
 def _resolve_key(request) -> str:
     """
     Return the rate-limit key for a request.
@@ -54,17 +55,19 @@ def _resolve_key(request) -> str:
         token = auth_header[7:]
         try:
             from src.api.auth import decode_access_token
+
             payload = decode_access_token(token)
             client_id = payload.get("sub", "")
             if client_id:
                 return f"client:{client_id}"
         except Exception:
-            pass   # invalid token — fall through to IP
+            pass  # invalid token — fall through to IP
 
     return f"ip:{get_remote_address(request)}"
 
 
 # ── Limiter instance ──────────────────────────────────────────────────────────
+
 
 def _make_storage_uri() -> str:
     """

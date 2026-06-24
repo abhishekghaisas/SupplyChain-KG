@@ -27,7 +27,7 @@ class PartCompatibilityRule(BaseRule):
         super().__init__(
             name="PartCompatibilityRule",
             rule_type=RuleType.COMPATIBILITY,
-            severity=RuleSeverity.CRITICAL
+            severity=RuleSeverity.CRITICAL,
         )
 
     def check(
@@ -51,8 +51,8 @@ class PartCompatibilityRule(BaseRule):
         """
         import json
 
-        original_id = original_part.get('id')
-        substitute_id = substitute_part.get('id')
+        original_id = original_part.get("id")
+        substitute_id = substitute_part.get("id")
 
         self.facts_used = [
             f"original_part:{original_id}",
@@ -88,10 +88,10 @@ class PartCompatibilityRule(BaseRule):
                         ),
                         details={
                             "compatibility_type": rel.get("compatibility_type"),
-                            "validated_by":       rel.get("validated_by"),
-                            "validated_date":     rel.get("validated_date"),
-                            "notes":              rel.get("notes"),
-                            "source":             "COMPATIBLE_WITH_relationship",
+                            "validated_by": rel.get("validated_by"),
+                            "validated_date": rel.get("validated_date"),
+                            "notes": rel.get("notes"),
+                            "source": "COMPATIBLE_WITH_relationship",
                         },
                         confidence=0.99,
                     )
@@ -103,31 +103,31 @@ class PartCompatibilityRule(BaseRule):
 
         # ── Step 2: spec-based comparison (fallback / no db) ─────────────────
         try:
-            original_specs = json.loads(original_part.get('specifications_json', '{}'))
-            substitute_specs = json.loads(substitute_part.get('specifications_json', '{}'))
+            original_specs = json.loads(original_part.get("specifications_json", "{}"))
+            substitute_specs = json.loads(substitute_part.get("specifications_json", "{}"))
         except json.JSONDecodeError:
             return self._create_result(
                 passed=False,
                 reason="Failed to parse specifications",
                 details={"error": "Invalid JSON in specifications"},
-                confidence=0.0
+                confidence=0.0,
             )
 
         # Check category match
-        if original_part.get('category') != substitute_part.get('category'):
+        if original_part.get("category") != substitute_part.get("category"):
             return self._create_result(
                 passed=False,
                 reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # noqa: E501
                 details={
-                    "original_category": original_part.get('category'),
-                    "substitute_category": substitute_part.get('category')
+                    "original_category": original_part.get("category"),
+                    "substitute_category": substitute_part.get("category"),
                 },
-                confidence=1.0
+                confidence=1.0,
             )
 
         # Check key specifications
         mismatches = []
-        for key in ['voltage', 'power_rating']:
+        for key in ["voltage", "power_rating"]:
             if key in original_specs:
                 if key not in substitute_specs:
                     mismatches.append(f"{key} missing in substitute")
@@ -139,12 +139,12 @@ class PartCompatibilityRule(BaseRule):
                 passed=False,
                 reason=f"Specification mismatches: {'; '.join(mismatches)}",
                 details={"mismatches": mismatches},
-                confidence=1.0
+                confidence=1.0,
             )
 
         # Check certifications — substitute must cover all original certs
-        original_certs = set(original_specs.get('certifications', []))
-        substitute_certs = set(substitute_specs.get('certifications', []))
+        original_certs = set(original_specs.get("certifications", []))
+        substitute_certs = set(substitute_specs.get("certifications", []))
 
         missing_certs = original_certs - substitute_certs
         if missing_certs:
@@ -152,7 +152,7 @@ class PartCompatibilityRule(BaseRule):
                 passed=False,
                 reason=f"Missing certifications: {', '.join(missing_certs)}",
                 details={"missing_certifications": list(missing_certs)},
-                confidence=1.0
+                confidence=1.0,
             )
 
         # All spec checks passed
@@ -162,9 +162,9 @@ class PartCompatibilityRule(BaseRule):
             details={
                 "category_match": True,
                 "specifications_compatible": True,
-                "certifications_sufficient": True
+                "certifications_sufficient": True,
             },
-            confidence=0.95
+            confidence=0.95,
         )
 
 
@@ -175,14 +175,11 @@ class LeadTimeFeasibilityRule(BaseRule):
         super().__init__(
             name="LeadTimeFeasibilityRule",
             rule_type=RuleType.CONSTRAINT,
-            severity=RuleSeverity.ERROR
+            severity=RuleSeverity.ERROR,
         )
 
     def check(
-        self,
-        supplier_lead_time_days: int,
-        required_date: date,
-        order_date: Optional[date] = None
+        self, supplier_lead_time_days: int, required_date: date, order_date: Optional[date] = None
     ) -> RuleResult:
         """
         Check if supplier can deliver by required date.
@@ -201,7 +198,7 @@ class LeadTimeFeasibilityRule(BaseRule):
         self.facts_used = [
             f"lead_time:{supplier_lead_time_days}",
             f"required_date:{required_date}",
-            f"order_date:{order_date}"
+            f"order_date:{order_date}",
         ]
 
         earliest_delivery = order_date + timedelta(days=supplier_lead_time_days)
@@ -214,9 +211,9 @@ class LeadTimeFeasibilityRule(BaseRule):
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
-                    "days_late": abs(days_difference)
+                    "days_late": abs(days_difference),
                 },
-                confidence=1.0
+                confidence=1.0,
             )
 
         # Calculate confidence based on buffer
@@ -234,9 +231,9 @@ class LeadTimeFeasibilityRule(BaseRule):
             details={
                 "earliest_delivery": earliest_delivery.isoformat(),
                 "required_date": required_date.isoformat(),
-                "buffer_days": buffer_days
+                "buffer_days": buffer_days,
             },
-            confidence=confidence
+            confidence=confidence,
         )
 
 
@@ -247,14 +244,14 @@ class SupplierQualificationRule(BaseRule):
         super().__init__(
             name="SupplierQualificationRule",
             rule_type=RuleType.VALIDATION,
-            severity=RuleSeverity.ERROR
+            severity=RuleSeverity.ERROR,
         )
 
     def check(
         self,
         supplier: Dict[str, Any],
         required_certifications: Optional[list] = None,
-        min_rating: float = 3.5
+        min_rating: float = 3.5,
     ) -> RuleResult:
         """
         Check if supplier is qualified.
@@ -272,44 +269,37 @@ class SupplierQualificationRule(BaseRule):
         issues = []
 
         # Check status
-        if supplier.get('status') != 'ACTIVE':
+        if supplier.get("status") != "ACTIVE":
             return self._create_result(
                 passed=False,
                 reason=f"Supplier status is {supplier.get('status')}, not ACTIVE",
-                details={"status": supplier.get('status')},
+                details={"status": supplier.get("status")},
                 severity=RuleSeverity.CRITICAL,
-                confidence=1.0
+                confidence=1.0,
             )
 
         # Check certifications
         if required_certifications:
-            supplier_certs = set(supplier.get('certifications', []))
+            supplier_certs = set(supplier.get("certifications", []))
             missing = set(required_certifications) - supplier_certs
             if missing:
                 issues.append(f"Missing certifications: {', '.join(missing)}")
 
         # Check rating
-        rating = supplier.get('rating', 0.0)
+        rating = supplier.get("rating", 0.0)
         if rating < min_rating:
             issues.append(f"Rating {rating} below minimum {min_rating}")
 
         if issues:
             return self._create_result(
-                passed=False,
-                reason="; ".join(issues),
-                details={"issues": issues},
-                confidence=1.0
+                passed=False, reason="; ".join(issues), details={"issues": issues}, confidence=1.0
             )
 
         return self._create_result(
             passed=True,
             reason="Supplier meets all qualification requirements",
-            details={
-                "status": "ACTIVE",
-                "rating": rating,
-                "certifications_met": True
-            },
-            confidence=0.95
+            details={"status": "ACTIVE", "rating": rating, "certifications_met": True},
+            confidence=0.95,
         )
 
 
@@ -320,14 +310,11 @@ class PriceReasonablenessRule(BaseRule):
         super().__init__(
             name="PriceReasonablenessRule",
             rule_type=RuleType.VALIDATION,
-            severity=RuleSeverity.WARNING
+            severity=RuleSeverity.WARNING,
         )
 
     def check(
-        self,
-        current_price: float,
-        historical_prices: list,
-        max_deviation_percent: float = 30.0
+        self, current_price: float, historical_prices: list, max_deviation_percent: float = 30.0
     ) -> RuleResult:
         """
         Check if price is within reasonable range.
@@ -345,7 +332,7 @@ class PriceReasonablenessRule(BaseRule):
                 passed=True,
                 reason="No historical data to compare",
                 details={"note": "First price for this item"},
-                confidence=0.5
+                confidence=0.5,
             )
 
         avg_price = sum(historical_prices) / len(historical_prices)
@@ -358,9 +345,9 @@ class PriceReasonablenessRule(BaseRule):
                 details={
                     "current_price": current_price,
                     "average_price": avg_price,
-                    "deviation_percent": deviation_percent
+                    "deviation_percent": deviation_percent,
                 },
-                confidence=0.9
+                confidence=0.9,
             )
 
         return self._create_result(
@@ -369,7 +356,7 @@ class PriceReasonablenessRule(BaseRule):
             details={
                 "current_price": current_price,
                 "average_price": avg_price,
-                "deviation_percent": deviation_percent
+                "deviation_percent": deviation_percent,
             },
-            confidence=0.9
+            confidence=0.9,
         )
