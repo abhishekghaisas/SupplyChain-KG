@@ -315,6 +315,18 @@ class ClaudeEntityExtractor:
             )
         return self._llm
 
+    def _get_llm(self):
+        """Lazy-initialise LangChain client to avoid import errors at module load."""
+        if self._llm is None:
+            from langchain_anthropic import ChatAnthropic
+            self._llm = ChatAnthropic(
+                anthropic_api_key=self.api_key,
+                model=self.model,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+            )
+        return self._llm
+
     @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
     def extract_from_text(
         self, text: str, document_type: str = "unknown", source: str = "unknown"
