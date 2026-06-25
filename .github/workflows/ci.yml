@@ -83,12 +83,12 @@ jobs:
       - name: flake8
         run: |
           flake8 src/ \
-            --max-line-length=150 \
+            --max-line-length=100 \
             --extend-ignore=E203,W503 \
             --exclude=__pycache__,.venv
 
       - name: black (check only)
-        run: black --check --line-length=150 src/
+        run: black --check --line-length=100 src/
 
       - name: mypy (non-blocking)
         # mypy findings are reported but don't fail the build yet.
