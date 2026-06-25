@@ -96,10 +96,7 @@ class PartCompatibilityRule(BaseRule):
         if original_part.get("category") != substitute_part.get("category"):
             return self._create_result(
                 passed=False,
-                reason=(
-                    f"Category mismatch: {original_part.get('category')}"
-                    f" vs {substitute_part.get('category')}"
-                ),
+                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # fmt: skip
                 details={
                     "original_category": original_part.get("category"),
                     "substitute_category": substitute_part.get("category"),
@@ -189,10 +186,7 @@ class LeadTimeFeasibilityRule(BaseRule):
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
-                reason=(
-                    f"Cannot deliver on time: earliest delivery {earliest_delivery},"
-                    f" needed by {required_date}"
-                ),
+                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",  # fmt: skip
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
@@ -373,9 +367,8 @@ class PriceReasonablenessRule(BaseRule):
                 sigma_distance = abs(current_price - mean) / std_dev
                 threshold = outlier_sigma if outlier_sigma is not None else 2.0
                 if sigma_distance > threshold:
-                    failures.append(
-                        f"Statistical outlier: {sigma_distance:.1f}σ "
-                        f"from mean (threshold {threshold}σ)"
+                    failures.append(  # fmt: skip
+                        f"Statistical outlier: {sigma_distance:.1f}σ from mean (threshold {threshold}σ)"  # fmt: skip
                     )
         details["sigma_distance"] = sigma_distance
 
@@ -397,8 +390,7 @@ class PriceReasonablenessRule(BaseRule):
                 last_price = historical_prices[-1]
                 if recent_upward and current_price > last_price:
                     failures.append(
-                        f"Upward price trend detected over last {trend_window} periods; "
-                        f"new quote continues upward"
+                        f"Upward price trend detected over last {trend_window} periods; new quote continues upward"  # fmt: skip
                     )
             else:
                 trend_info = {"analyzed": False, "reason": "insufficient_data"}
@@ -426,16 +418,14 @@ class PriceReasonablenessRule(BaseRule):
                 "limit":                     bench_limit,
             }
             if bench_dev > bench_limit:
-                failures.append(
-                    f"Price {bench_dev:.1f}% above competitor median "
-                    f"(limit {bench_limit}%); competitor benchmark exceeded"
+                failures.append(  # fmt: skip
+                    f"Price {bench_dev:.1f}% above competitor median (limit {bench_limit}%); competitor benchmark exceeded"  # fmt: skip
                 )
 
         # ── Standard deviation check ─────────────────────────────────────────
         if deviation_percent > max_deviation_percent:
             failures.append(
-                f"Price deviation {deviation_percent:.1f}% "
-                f"exceeds maximum {max_deviation_percent}%"
+                f"Price deviation {deviation_percent:.1f}% exceeds maximum {max_deviation_percent}%"  # fmt: skip
             )
 
         if failures:
@@ -448,7 +438,7 @@ class PriceReasonablenessRule(BaseRule):
 
         return self._create_result(
             passed=True,
-            reason=(f"Price within acceptable range " f"(deviation: {deviation_percent:.1f}%)"),
+            reason=f"Price within acceptable range (deviation: {deviation_percent:.1f}%)",  # fmt: skip
             details=details,
             confidence=0.9,
         )
