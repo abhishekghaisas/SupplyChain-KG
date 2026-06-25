@@ -97,7 +97,7 @@ class PartCompatibilityRule(BaseRule):
         if original_part.get("category") != substitute_part.get("category"):
             return self._create_result(
                 passed=False,
-                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",
+                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # noqa: E501
                 details={
                     "original_category": original_part.get("category"),
                     "substitute_category": substitute_part.get("category"),
@@ -187,7 +187,7 @@ class LeadTimeFeasibilityRule(BaseRule):
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
-                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",
+                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",  # noqa: E501
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
@@ -369,7 +369,7 @@ class PriceReasonablenessRule(BaseRule):
                 threshold = outlier_sigma if outlier_sigma is not None else 2.0
                 if sigma_distance > threshold:
                     failures.append(
-                        f"Statistical outlier: {sigma_distance:.1f}sigma from mean (threshold {threshold}sigma)"
+                        f"Statistical outlier: {sigma_distance:.1f}sigma from mean (threshold {threshold}sigma)"  # noqa: E501
                     )
         details["sigma_distance"] = sigma_distance
 
@@ -391,7 +391,7 @@ class PriceReasonablenessRule(BaseRule):
                 last_price = historical_prices[-1]
                 if recent_upward and current_price > last_price:
                     failures.append(
-                        f"Upward price trend detected over last {trend_window} periods; new quote continues upward"
+                        f"Upward price trend detected over last {trend_window} periods; new quote continues upward"  # noqa: E501
                     )
             else:
                 trend_info = {"analyzed": False, "reason": "insufficient_data"}
@@ -420,7 +420,7 @@ class PriceReasonablenessRule(BaseRule):
             }
             if bench_dev > bench_limit:
                 failures.append(
-                    f"Price {bench_dev:.1f}% above competitor median (limit {bench_limit}%); competitor benchmark exceeded"
+                    f"Price {bench_dev:.1f}% above competitor median (limit {bench_limit}%); competitor benchmark exceeded"  # noqa: E501
                 )
 
         # ── Standard deviation check ─────────────────────────────────────────

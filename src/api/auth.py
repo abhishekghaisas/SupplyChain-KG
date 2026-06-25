@@ -225,7 +225,7 @@ def token(
     if grant_type != "client_credentials":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported grant_type: {grant_type!r}. Use 'client_credentials' or 'refresh_token'.",
+            detail=f"Unsupported grant_type: {grant_type!r}. Use 'client_credentials' or 'refresh_token'.",  # noqa: E501
         )
 
     if client_id != settings.oauth2_client_id:
