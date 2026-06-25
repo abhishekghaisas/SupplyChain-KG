@@ -72,6 +72,7 @@ def store_refresh_token(jti: str, client_id: str, ttl_seconds: int) -> None:
         logger.debug(f"Stored refresh token JTI {jti[:8]}… for client {client_id!r}")
     except Exception as exc:
         logger.error(f"Failed to store refresh token: {exc}")
+        raise
 
 
 def validate_and_consume_refresh_token(jti: str) -> Optional[str]:

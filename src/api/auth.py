@@ -50,10 +50,12 @@ from jose import JWTError, jwt
 from loguru import logger
 from pydantic import BaseModel
 
-from src.api.limiter import AUTH_LIMIT  # noqa: F401 — exported for reference; rate limiting is applied via SlowAPIMiddleware using app.state.limiter
+from src.api.limiter import AUTH_LIMIT  # noqa: F401 — see SlowAPIMiddleware in main.py
 from src.config import get_settings
 
 # Exposed at module level for test patching
+
+
 def validate_and_consume_refresh_token(jti: str):
     from src.api.token_store import validate_and_consume_refresh_token as _fn
     return _fn(jti)

@@ -43,7 +43,7 @@ class PartCompatibilityRule(BaseRule):
         # ── Path 1: graph pre-approval ────────────────────────────────────────
         if db is not None:
             orig_id = original_part.get("id")
-            sub_id  = substitute_part.get("id")
+            sub_id = substitute_part.get("id")
             query = (
                 "MATCH (o:Part {id: $orig_id})-[r:COMPATIBLE_WITH "
                 "{validation_status: 'VERIFIED'}]->(s:Part {id: $sub_id}) "
@@ -96,7 +96,10 @@ class PartCompatibilityRule(BaseRule):
         if original_part.get("category") != substitute_part.get("category"):
             return self._create_result(
                 passed=False,
-                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # noqa: E501
+                reason=(
+                    f"Category mismatch: {original_part.get('category')}"
+                    f" vs {substitute_part.get('category')}"
+                ),
                 details={
                     "original_category": original_part.get("category"),
                     "substitute_category": substitute_part.get("category"),
@@ -186,7 +189,10 @@ class LeadTimeFeasibilityRule(BaseRule):
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
-                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",  # noqa: E501
+                reason=(
+                    f"Cannot deliver on time: earliest delivery {earliest_delivery},"
+                    f" needed by {required_date}"
+                ),
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
