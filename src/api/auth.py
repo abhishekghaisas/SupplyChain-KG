@@ -224,7 +224,7 @@ def token(
     if grant_type != "client_credentials":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported grant_type: {grant_type!r}. Use 'client_credentials' or 'refresh_token'.",  # fmt: skip
+            detail=f"Unsupported grant_type: {grant_type!r}. Use 'client_credentials' or 'refresh_token'.",  # fmt: skip  # noqa: E501
         )
 
     if client_id != settings.oauth2_client_id:
@@ -298,7 +298,7 @@ def refresh(
         # Token not in Redis — already used, expired, or revoked.
         # This could be a reuse attack; log and reject.
         logger.warning(
-            f"Refresh token reuse or revocation detected for client {client_id!r} JTI {jti[:8]}…"  # fmt: skip
+            f"Refresh token reuse or revocation detected for client {client_id!r} JTI {jti[:8]}…"  # fmt: skip  # noqa: E501
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
