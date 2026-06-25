@@ -2,6 +2,7 @@
 FastAPI dependencies for the Supply Chain Knowledge Graph API.
 """
 
+# fmt: off
 from typing import Generator, Optional
 
 from fastapi import Depends, HTTPException, Security, status

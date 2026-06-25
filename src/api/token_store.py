@@ -28,6 +28,7 @@ Public API
   revoke_all_for_client(client_id)   — nuclear option, e.g. on password change
 """
 
+# fmt: off
 from __future__ import annotations
 
 from typing import Optional

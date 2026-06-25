@@ -5,6 +5,7 @@ These implement business logic for part compatibility, supplier qualification,
 lead time feasibility, and other supply chain decisions.
 """
 
+# fmt: off
 from typing import Dict, Any, Optional
 from datetime import date, timedelta
 
@@ -96,7 +97,7 @@ class PartCompatibilityRule(BaseRule):
         if original_part.get("category") != substitute_part.get("category"):
             return self._create_result(
                 passed=False,
-                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",  # fmt: skip  # noqa: E501
+                reason=f"Category mismatch: {original_part.get('category')} vs {substitute_part.get('category')}",
                 details={
                     "original_category": original_part.get("category"),
                     "substitute_category": substitute_part.get("category"),
@@ -186,7 +187,7 @@ class LeadTimeFeasibilityRule(BaseRule):
         if earliest_delivery > required_date:
             return self._create_result(
                 passed=False,
-                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",  # fmt: skip  # noqa: E501
+                reason=f"Cannot deliver on time: earliest delivery {earliest_delivery}, needed by {required_date}",
                 details={
                     "earliest_delivery": earliest_delivery.isoformat(),
                     "required_date": required_date.isoformat(),
@@ -367,8 +368,8 @@ class PriceReasonablenessRule(BaseRule):
                 sigma_distance = abs(current_price - mean) / std_dev
                 threshold = outlier_sigma if outlier_sigma is not None else 2.0
                 if sigma_distance > threshold:
-                    failures.append(  # fmt: skip
-                        f"Statistical outlier: {sigma_distance:.1f}σ from mean (threshold {threshold}σ)"  # fmt: skip  # noqa: E501
+                    failures.append(
+                        f"Statistical outlier: {sigma_distance:.1f}sigma from mean (threshold {threshold}sigma)"
                     )
         details["sigma_distance"] = sigma_distance
 
@@ -390,7 +391,7 @@ class PriceReasonablenessRule(BaseRule):
                 last_price = historical_prices[-1]
                 if recent_upward and current_price > last_price:
                     failures.append(
-                        f"Upward price trend detected over last {trend_window} periods; new quote continues upward"  # fmt: skip  # noqa: E501
+                        f"Upward price trend detected over last {trend_window} periods; new quote continues upward"
                     )
             else:
                 trend_info = {"analyzed": False, "reason": "insufficient_data"}
@@ -418,14 +419,14 @@ class PriceReasonablenessRule(BaseRule):
                 "limit":                     bench_limit,
             }
             if bench_dev > bench_limit:
-                failures.append(  # fmt: skip
-                    f"Price {bench_dev:.1f}% above competitor median (limit {bench_limit}%); competitor benchmark exceeded"  # fmt: skip  # noqa: E501
+                failures.append(
+                    f"Price {bench_dev:.1f}% above competitor median (limit {bench_limit}%); competitor benchmark exceeded"
                 )
 
         # ── Standard deviation check ─────────────────────────────────────────
         if deviation_percent > max_deviation_percent:
             failures.append(
-                f"Price deviation {deviation_percent:.1f}% exceeds maximum {max_deviation_percent}%"  # fmt: skip  # noqa: E501
+                f"Price deviation {deviation_percent:.1f}% exceeds maximum {max_deviation_percent}%"
             )
 
         if failures:
@@ -438,7 +439,7 @@ class PriceReasonablenessRule(BaseRule):
 
         return self._create_result(
             passed=True,
-            reason=f"Price within acceptable range (deviation: {deviation_percent:.1f}%)",  # fmt: skip  # noqa: E501
+            reason=f"Price within acceptable range (deviation: {deviation_percent:.1f}%)",
             details=details,
             confidence=0.9,
         )
