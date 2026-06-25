@@ -1,50 +1,78 @@
 """
-FastAPI dependency injection: authentication and database session.
-
-Authentication is now OAuth2 Bearer (JWT).
-Obtain a token via POST /auth/token (client credentials flow),
-then pass it as:  Authorization: Bearer <token>
+FastAPI dependencies for the Supply Chain Knowledge Graph API.
 """
 
-from typing import Generator
+from typing import Generator, Optional
 
-from fastapi import HTTPException, Security, status
+from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from loguru import logger
 
 from src.api.auth import decode_access_token
 from src.graph.neo4j_client import Neo4jClient
 
-# ── Auth ──────────────────────────────────────────────────────────────────────
+# ── Auth dependency ───────────────────────────────────────────────────────────
 
-_bearer_scheme = HTTPBearer(auto_error=False)
+_bearer = HTTPBearer(auto_error=False)
 
 
 def verify_token(
-    credentials: HTTPAuthorizationCredentials = Security(_bearer_scheme),
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(_bearer),
 ) -> dict:
     """
-    Validate the Authorization: Bearer <token> header.
+    Validate the Bearer JWT and return the decoded payload.
 
-    Decodes and verifies the JWT, returning the token payload on success.
-    Raises HTTP 401 if the header is missing, the token is invalid, or expired.
+    Raises 401 if no token or invalid token.
     """
     if credentials is None or credentials.scheme.lower() != "bearer":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing or invalid Authorization header. " "Use: Authorization: Bearer <token>",
+            detail="Missing or invalid Authorization header",
             headers={"WWW-Authenticate": "Bearer"},
         )
     return decode_access_token(credentials.credentials)
 
 
-# ── Database ──────────────────────────────────────────────────────────────────
+# ── DB dependency ─────────────────────────────────────────────────────────────
 
 
-def get_db() -> Generator[Neo4jClient, None, None]:
-    """Yield a connected Neo4jClient and close it when the request finishes."""
+def get_db() -> Generator[Optional[Neo4jClient], None, None]:
+    """
+    Yield a connected Neo4jClient, or None if Neo4j is unreachable.
+
+    Endpoints that absolutely require the database should check for None
+    and raise HTTP 503. Endpoints that only optionally use the database
+    (e.g. extraction without persist) can proceed without it.
+
+    Yielding None instead of raising keeps FastAPI's dependency injection
+    from crashing before Pydantic has a chance to validate the request body —
+    which would turn a 422 (bad request) into a 500 (server error).
+    """
+    from neo4j.exceptions import ServiceUnavailable
+
     client = Neo4jClient()
-    client.connect()
+    try:
+        client.connect()
+    except (ServiceUnavailable, Exception) as exc:
+        logger.warning(f"get_db: Neo4j unavailable — yielding None: {exc}")
+        yield None
+        return
+
     try:
         yield client
     finally:
         client.close()
+
+
+def require_db(db: Optional[Neo4jClient] = Depends(get_db)) -> Neo4jClient:
+    """
+    Like get_db but raises HTTP 503 if Neo4j is unavailable.
+
+    Use this on endpoints that cannot function without the database.
+    """
+    if db is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Database unavailable",
+        )
+    return db
