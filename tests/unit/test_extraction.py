@@ -18,7 +18,15 @@ from fastapi.testclient import TestClient
 from src.api.main import app
 
 client = TestClient(app)
-HEADERS = {"X-API-Key": "dev-api-key"}
+from jose import jwt as _jwt
+import os
+_JWT_SECRET = os.environ.get("JWT_SECRET_KEY", "ci-test-jwt-secret-not-for-production")
+_TEST_TOKEN = _jwt.encode(
+    {"sub": "ci-client", "type": "access"},
+    _JWT_SECRET,
+    algorithm="HS256",
+)
+HEADERS = {"Authorization": f"Bearer {_TEST_TOKEN}"}
 
 # ─── Shared fixtures / helpers ────────────────────────────────────────────────
 

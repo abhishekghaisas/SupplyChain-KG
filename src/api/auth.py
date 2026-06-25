@@ -50,7 +50,7 @@ from jose import JWTError, jwt
 from loguru import logger
 from pydantic import BaseModel
 
-from src.api.limiter import AUTH_LIMIT, limiter
+from src.api.limiter import AUTH_LIMIT  # noqa: F401 — exported for reference; rate limiting is applied via SlowAPIMiddleware using app.state.limiter
 from src.config import get_settings
 
 # Exposed at module level for test patching
@@ -203,7 +203,6 @@ def _verify_client_secret(plain: str, hashed: str) -> bool:
 
 
 @router.post("/token", response_model=TokenResponse)
-@limiter.limit(AUTH_LIMIT)
 def token(
     request: Request,
     grant_type: str = Form(...),
@@ -256,7 +255,6 @@ def token(
 
 
 @router.post("/refresh", response_model=TokenResponse)
-@limiter.limit(AUTH_LIMIT)
 def refresh(
     request: Request,
     grant_type: str = Form(...),
@@ -331,7 +329,6 @@ def refresh(
 
 
 @router.post("/revoke")
-@limiter.limit(AUTH_LIMIT)
 def revoke(
     request: Request,
     body: RevokeRequest = Body(...),
