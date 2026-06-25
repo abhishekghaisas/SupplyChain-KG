@@ -40,6 +40,46 @@ class PartCompatibilityRule(BaseRule):
             f"substitute_part:{substitute_part.get('id')}",
         ]
 
+        # ── Path 1: graph pre-approval ────────────────────────────────────────
+        if db is not None:
+            orig_id = original_part.get("id")
+            sub_id  = substitute_part.get("id")
+            query = (
+                "MATCH (o:Part {id: $orig_id})-[r:COMPATIBLE_WITH "
+                "{validation_status: 'VERIFIED'}]->(s:Part {id: $sub_id}) "
+                "RETURN r.compatibility_type AS compatibility_type, "
+                "r.notes AS notes, r.validated_by AS validated_by, "
+                "r.validated_date AS validated_date LIMIT 1"
+            )
+            try:
+                rows = db.execute_query(query, {"orig_id": orig_id, "sub_id": sub_id})
+                if rows:
+                    edge = rows[0]
+                    notes = edge.get("notes") or ""
+                    self.facts_used.append("graph:COMPATIBLE_WITH:VERIFIED")
+                    reason = "Engineering-verified COMPATIBLE_WITH relationship found"
+                    if notes:
+                        reason = f"{reason}; {notes}"
+                    return self._create_result(
+                        passed=True,
+                        reason=reason,
+                        details={
+                            "source":             "COMPATIBLE_WITH_relationship",
+                            "compatibility_type": edge.get("compatibility_type"),
+                            "notes":              notes,
+                            "validated_by":       edge.get("validated_by"),
+                            "validated_date":     str(edge.get("validated_date", "")),
+                        },
+                        confidence=1.0,
+                    )
+            except Exception as exc:
+                from loguru import logger
+                logger.warning(
+                    f"Graph lookup failed for {orig_id}→{sub_id}: {exc}. "
+                    "Falling through to spec comparison."
+                )
+        # ── Path 2: spec comparison (fallback) ────────────────────────────────
+
         # Parse specifications
         try:
             original_specs = json.loads(original_part.get("specifications_json", "{}"))
@@ -283,9 +323,9 @@ class PriceReasonablenessRule(BaseRule):
         # Record provenance facts
         self.facts_used = [f"current_price:{current_price}"]
         if part_id:
-            self.facts_used.append(f"part_id:{part_id}")
+            self.facts_used.append(f"part:{part_id}")
         if supplier_id:
-            self.facts_used.append(f"supplier_id:{supplier_id}")
+            self.facts_used.append(f"supplier:{supplier_id}")
         if historical_prices:
             self.facts_used.append(f"historical_data_points:{len(historical_prices)}")
 
@@ -337,21 +377,22 @@ class PriceReasonablenessRule(BaseRule):
         trend_info: dict = {"analyzed": False}
         if trend_window is not None:
             if len(historical_prices) >= trend_window:
-                window = historical_prices[-trend_window:]
-                trend_avg = sum(window) / len(window)
-                trend_deviation = (current_price - trend_avg) / trend_avg * 100
+                recent = historical_prices[-trend_window:]
+                recent_upward = all(
+                    recent[i] < recent[i + 1] for i in range(len(recent) - 1)
+                )
                 trend_info = {
                     "analyzed": True,
                     "window": trend_window,
-                    "trend_average": trend_avg,
-                    "trend_deviation_percent": trend_deviation,
+                    "recent_prices": recent,
+                    "recent_upward_trend": recent_upward,
                 }
-                details["trend_average"] = trend_avg
-                details["trend_deviation_percent"] = trend_deviation
-                if abs(trend_deviation) > max_deviation_percent:
+                # Only flag if trend is upward AND new price continues higher
+                last_price = historical_prices[-1]
+                if recent_upward and current_price > last_price:
                     failures.append(
-                        f"Trend deviation {trend_deviation:.1f}% "
-                        f"exceeds {max_deviation_percent}%"
+                        f"Upward price trend detected over last {trend_window} periods; "
+                        f"new quote continues upward"
                     )
             else:
                 trend_info = {"analyzed": False, "reason": "insufficient_data"}
@@ -360,8 +401,12 @@ class PriceReasonablenessRule(BaseRule):
         # ── Competitor benchmark ─────────────────────────────────────────────
         if competitor_prices:
             sorted_c = sorted(competitor_prices)
-            median_idx = len(sorted_c) // 2
-            competitor_median = sorted_c[median_idx]
+            n = len(sorted_c)
+            # Proper median: average the two middle values for even-length lists
+            if n % 2 == 1:
+                competitor_median = sorted_c[n // 2]
+            else:
+                competitor_median = (sorted_c[n // 2 - 1] + sorted_c[n // 2]) / 2.0
             bench_dev = (current_price - competitor_median) / competitor_median * 100
             bench_limit = (
                 benchmark_deviation_percent
@@ -369,15 +414,15 @@ class PriceReasonablenessRule(BaseRule):
                 else max_deviation_percent
             )
             details["benchmark"] = {
-                "competitor_median": competitor_median,
-                "benchmark_deviation_percent": bench_dev,
-                "limit": bench_limit,
+                "competitor_count":          n,
+                "competitor_median":         competitor_median,
+                "deviation_from_median_pct": bench_dev,
+                "limit":                     bench_limit,
             }
-            details["competitor_median"] = competitor_median
-            details["benchmark_deviation_percent"] = bench_dev
             if bench_dev > bench_limit:
                 failures.append(
-                    f"Price {bench_dev:.1f}% above competitor median " f"(limit {bench_limit}%)"
+                    f"Price {bench_dev:.1f}% above competitor median "
+                    f"(limit {bench_limit}%); competitor benchmark exceeded"
                 )
 
         # ── Standard deviation check ─────────────────────────────────────────
