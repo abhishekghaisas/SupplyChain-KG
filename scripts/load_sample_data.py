@@ -172,7 +172,7 @@ def main():
         
         # Clear existing data (optional - comment out to preserve data)
         logger.warning("Clearing existing data...")
-        client.clear_all_data()
+        #client.clear_all_data()
         
         # Load data in order
         load_parts(client, data_dir / "parts.json")

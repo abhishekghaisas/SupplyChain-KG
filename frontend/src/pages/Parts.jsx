@@ -6,6 +6,7 @@ import {
   Modal, Field, SectionHeader, MonoId,
 } from '../components/ui'
 import SearchBar from '../components/SearchBar'
+import SubstituteSuggestions from '../components/SubstituteSuggestions'
 
 // ── Create part form ──────────────────────────────────────────────────────────
 

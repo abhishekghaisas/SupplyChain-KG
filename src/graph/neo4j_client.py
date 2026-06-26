@@ -306,7 +306,7 @@ class Neo4jClient:
         MATCH (s:Supplier {id: $supplier_id})
         MATCH (p:Part {id: $part_id})
         MERGE (s)-[r:SUPPLIES {valid_from: date($valid_from)}]->(p)
-        SET r.valid_to                = CASE WHEN $valid_to IS NULL THEN NULL ELSE date($valid_to) END,  # noqa: E501
+        SET r.valid_to                = CASE WHEN $valid_to IS NULL THEN NULL ELSE date($valid_to) END,
             r.lead_time_days          = $lead_time_days,
             r.price                   = $price,
             r.currency                = $currency,
